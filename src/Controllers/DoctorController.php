@@ -7,20 +7,23 @@ use App\Core\Session;
 use App\Core\View;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\AppointmentRepository;
+use App\Repositories\DoctorRepository;
 use App\Repositories\VisitRepository;
 use App\Services\DoctorService;
 
-class DoctorController
+class DoctorController extends BaseController
 {
     private DoctorService $service;
     private AppointmentRepository $appointments;
     private VisitRepository $visits;
+    private DoctorRepository $doctorRepo;
 
     public function __construct()
     {
         $this->service      = new DoctorService();
         $this->appointments = new AppointmentRepository();
         $this->visits       = new VisitRepository();
+        $this->doctorRepo   = new DoctorRepository();
     }
 
     // ── Дашборд ─────────────────────────────────────────────────────────────
@@ -224,23 +227,10 @@ public function profile(): void
         $bio      = trim($_POST['bio']       ?? '');
         $photoUrl = trim($_POST['photo_url'] ?? '');
 
-        $stmt = \App\Core\Database::getInstance()->prepare(
-            "UPDATE doctors SET bio = ?, photo_url = ? WHERE id = ?"
-        );
-        $stmt->execute([$bio, $photoUrl, $doctorId]);
+        $this->doctorRepo->update($doctorId, $bio, $photoUrl);
 
         Session::setFlash('success', 'Профиль обновлён.');
         AuthMiddleware::redirect('/doctor/profile');
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private function validateCsrf(): void
-    {
-        $token = $_POST['csrf_token'] ?? '';
-        if (!Session::validateCsrfToken($token)) {
-            http_response_code(419);
-            die('CSRF-токен недействителен.');
-        }
-    }
 }

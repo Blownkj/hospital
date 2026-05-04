@@ -5,69 +5,47 @@ namespace App\Controllers;
 
 use App\Core\Session;
 use App\Core\View;
+use App\Middleware\AuthMiddleware;
 use App\Repositories\ArticleRepository;
 use App\Repositories\DoctorRepository;
-use App\Repositories\ServiceRepository;
 use App\Repositories\ReviewRepository;
+use App\Repositories\ServiceRepository;
+use App\Repositories\StatisticsRepository;
 
-class PublicController
+class PublicController extends BaseController
 {
-    private DoctorRepository   $doctors;
-    private ServiceRepository  $services;
-    private ArticleRepository  $articles;
+    private DoctorRepository     $doctors;
+    private ServiceRepository    $services;
+    private ArticleRepository    $articles;
+    private StatisticsRepository $statsRepo;
 
     public function __construct()
     {
-        $this->doctors  = new DoctorRepository();
-        $this->services = new ServiceRepository();
-        $this->articles = new ArticleRepository();
+        $this->doctors   = new DoctorRepository();
+        $this->services  = new ServiceRepository();
+        $this->articles  = new ArticleRepository();
+        $this->statsRepo = new StatisticsRepository();
     }
 
     // GET /
     public function home(): void
     {
         $doctors = $this->doctors->getAllWithRating();
-        $reviewRepo  = new ReviewRepository();
-        $latestReviews = $this->getLatestReviews();
 
         $stats = [
-            'doctors'   => count($doctors),
-            'patients'  => $this->getPatientCount(),
-            'reviews'   => $this->getReviewCount(),
+            'doctors'  => count($doctors),
+            'patients' => $this->statsRepo->getPatientCount(),
+            'reviews'  => $this->statsRepo->getReviewCount(),
         ];
-
-        $specializations = $this->getSpecializations();
-        $recentArticles  = $this->articles->getRecent(3);
 
         View::render('public/home', [
             'pageTitle'       => 'Главная',
             'doctors'         => $doctors,
             'stats'           => $stats,
-            'latestReviews'   => $latestReviews,
-            'specializations' => $specializations,
-            'recentArticles'  => $recentArticles,
+            'latestReviews'   => $this->statsRepo->getLatestReviews(),
+            'specializations' => $this->statsRepo->getSpecializations(),
+            'recentArticles'  => $this->articles->getRecent(3),
         ]);
-    }
-
-    private function getSpecializations(): array
-    {
-        return \App\Core\Database::getInstance()
-            ->query("SELECT id, name, description FROM specializations ORDER BY name")
-            ->fetchAll();
-    }
-
-    private function getPatientCount(): int
-    {
-        return (int) \App\Core\Database::getInstance()
-            ->query("SELECT COUNT(*) FROM patients")
-            ->fetchColumn();
-    }
-
-    private function getReviewCount(): int
-    {
-        return (int) \App\Core\Database::getInstance()
-            ->query("SELECT COUNT(*) FROM reviews WHERE is_approved = 1")
-            ->fetchColumn();
     }
 
         public function about(): void
@@ -120,23 +98,7 @@ class PublicController
         ]);
     }
 
-    private function getLatestReviews(): array
-    {
-        $stmt = \App\Core\Database::getInstance()->query(
-            "SELECT r.rating, r.review_text AS text, r.created_at,
-                    p.full_name AS patient_name,
-                    d.full_name AS doctor_name,
-                    s.name AS specialization
-            FROM reviews r
-            JOIN patients p ON p.id = r.patient_id
-            JOIN doctors d ON d.id = r.doctor_id
-            JOIN specializations s ON s.id = d.specialization_id
-            WHERE r.is_approved = 1
-            ORDER BY r.created_at DESC
-            LIMIT 3"
-        );
-        return $stmt->fetchAll();
-    }
+
 
     public function doctors(): void
     {
@@ -173,6 +135,7 @@ class PublicController
     {
         View::render('public/contact', [
             'pageTitle' => 'Контакты',
+            'csrf'      => Session::generateCsrfToken(),
             'sent'      => false,
         ]);
     }
@@ -180,10 +143,14 @@ class PublicController
     // POST /contact
     public function contactSend(): void
     {
-        // Простая заглушка — в реальном проекте здесь PHPMailer
-        // Просто показываем сообщение об успехе
+        if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
+            Session::setFlash('error', 'Недействительный токен. Попробуйте снова.');
+            AuthMiddleware::redirect('/contact');
+        }
+
         View::render('public/contact', [
             'pageTitle' => 'Контакты',
+            'csrf'      => Session::generateCsrfToken(),
             'sent'      => true,
         ]);
     }

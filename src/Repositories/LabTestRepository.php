@@ -6,14 +6,9 @@ namespace App\Repositories;
 use App\Core\Database;
 use PDO;
 
-class LabTestRepository
+class LabTestRepository extends BaseRepository
 {
-    private PDO $db;
-
-    public function __construct()
-    {
-        $this->db = Database::getInstance();
-    }
+    protected string $table = 'lab_tests';
 
     /**
      * Все анализы, сгруппированные по категории

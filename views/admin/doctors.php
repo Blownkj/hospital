@@ -10,8 +10,7 @@ $doctors = $doctors ?? [];
 
 <a href="<?= BASE_URL ?>/admin/dashboard" class="back-link">← Дашборд</a>
 
-<?php if (!empty($flash ?? '')): ?><div class="alert alert-success">✅ <?= View::e($flash) ?></div><?php endif; ?>
-<?php if (!empty($error ?? '')): ?><div class="alert alert-error">⚠️ <?= View::e($error) ?></div><?php endif; ?>
+<?php include ROOT_PATH . '/views/partials/flash.php'; ?>
 
 <div class="page-header">
     <h1 class="page-title">Врачи</h1>
@@ -54,11 +53,13 @@ $doctors = $doctors ?? [];
 
 <!-- Результаты -->
 <?php if (empty($doctors)): ?>
-    <div class="card text-center" style="padding:48px">
-        <div style="font-size:40px;margin-bottom:12px">🔍</div>
-        <p class="text-muted mb-2">Врачи не найдены</p>
-        <a href="<?= BASE_URL ?>/admin/doctors" class="btn btn-primary btn-sm">Сбросить фильтр</a>
-    </div>
+    <?php
+    $emptyIcon    = '🔍';
+    $emptyMessage = 'Врачи не найдены';
+    $emptyLinkUrl = BASE_URL . '/admin/doctors';
+    $emptyLinkText = 'Сбросить фильтр';
+    include ROOT_PATH . '/views/partials/empty-state.php';
+    ?>
 <?php else: ?>
     <div class="card" style="padding:0;overflow:hidden">
         <table class="table" style="width:100%;border-collapse:collapse">

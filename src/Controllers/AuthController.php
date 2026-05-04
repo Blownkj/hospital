@@ -8,7 +8,7 @@ use App\Core\View;
 use App\Middleware\AuthMiddleware;
 use App\Services\AuthService;
 
-class AuthController
+class AuthController extends BaseController
 {
     private AuthService $auth;
 
@@ -41,6 +41,23 @@ class AuthController
     {
         AuthMiddleware::requireGuest();
 
+        // Rate-limiting: не более 5 попыток за 15 минут
+        $attempts = (int)(Session::get('login_attempts') ?? 0);
+        $resetAt  = (int)(Session::get('login_attempts_reset_at') ?? 0);
+        $now      = time();
+
+        if ($resetAt && $now > $resetAt) {
+            $attempts = 0;
+            Session::set('login_attempts', 0);
+            Session::set('login_attempts_reset_at', 0);
+        }
+
+        if ($attempts >= 5) {
+            $wait = (int)ceil(($resetAt - $now) / 60);
+            Session::setFlash('error', "Слишком много попыток. Подождите {$wait} мин.");
+            AuthMiddleware::redirect('/login');
+        }
+
         // CSRF-проверка
         $token = $_POST['csrf_token'] ?? '';
         if (!Session::validateCsrfToken($token)) {
@@ -54,10 +71,17 @@ class AuthController
         $user = $this->auth->login($email, $password);
 
         if ($user === null) {
+            $attempts++;
+            Session::set('login_attempts', $attempts);
+            if ($attempts === 1) {
+                Session::set('login_attempts_reset_at', $now + 900);
+            }
             Session::setFlash('error', 'Неверный email или пароль.');
             AuthMiddleware::redirect('/login');
         }
 
+        Session::set('login_attempts', 0);
+        Session::set('login_attempts_reset_at', 0);
         AuthMiddleware::redirectToDashboard();
     }
 

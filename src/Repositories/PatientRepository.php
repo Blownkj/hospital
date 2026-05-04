@@ -6,14 +6,9 @@ namespace App\Repositories;
 use App\Core\Database;
 use PDO;
 
-class PatientRepository
+class PatientRepository extends BaseRepository
 {
-    private PDO $db;
-
-    public function __construct()
-    {
-        $this->db = Database::getInstance();
-    }
+    protected string $table = 'patients';
 
     /**
      * Профиль пациента по user_id (из сессии)
@@ -41,5 +36,16 @@ class PatientRepository
             'UPDATE patients SET chronic_diseases = ? WHERE id = ?'
         );
         $stmt->execute([$text, $patientId]);
+    }
+
+    public function update(int $patientId, string $fullName, string $phone, string $address, string $chronicDiseases, string $birthDate): void
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE patients
+             SET full_name = ?, phone = ?, address = ?,
+                 chronic_diseases = ?, birth_date = ?
+             WHERE id = ?"
+        );
+        $stmt->execute([$fullName, $phone, $address, $chronicDiseases, $birthDate, $patientId]);
     }
 }

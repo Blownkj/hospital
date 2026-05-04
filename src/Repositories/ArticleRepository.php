@@ -5,14 +5,9 @@ namespace App\Repositories;
 
 use App\Core\Database;
 
-class ArticleRepository
+class ArticleRepository extends BaseRepository
 {
-    private \PDO $db;
-
-    public function __construct()
-    {
-        $this->db = Database::getInstance();
-    }
+    protected string $table = 'articles';
 
     public function getAll(): array
     {

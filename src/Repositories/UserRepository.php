@@ -7,14 +7,9 @@ use App\Core\Database;
 use App\Models\User;
 use PDO;
 
-class UserRepository
+class UserRepository extends BaseRepository
 {
-    private PDO $db;
-
-    public function __construct()
-    {
-        $this->db = Database::getInstance();
-    }
+    protected string $table = 'users';
 
     public function findByEmail(string $email): ?User
     {
@@ -110,5 +105,24 @@ class UserRepository
             error_log('createPatient error: ' . $e->getMessage());
             throw $e;
         }
+    }
+
+    public function changePassword(int $userId, string $currentPassword, string $newPassword): bool
+    {
+        $stmt = $this->db->prepare(
+            "SELECT password_hash FROM users WHERE id = ? LIMIT 1"
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch();
+
+        if (!$row || !password_verify($currentPassword, $row['password_hash'])) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            "UPDATE users SET password_hash = ? WHERE id = ?"
+        );
+        $stmt->execute([password_hash($newPassword, PASSWORD_BCRYPT), $userId]);
+        return true;
     }
 }

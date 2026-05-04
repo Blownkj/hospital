@@ -1,0 +1,1 @@
+<?php use App\Core\View; ?><span class="badge badge-<?= View::e($statusCls ?? '') ?>"><?= View::e($statusLabel ?? '') ?></span>

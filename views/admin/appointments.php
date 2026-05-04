@@ -13,8 +13,7 @@ $statusLabels = [
 
 <a href="<?= BASE_URL ?>/admin/dashboard" class="back-link">← Дашборд</a>
 
-<?php if ($flash): ?><div class="alert alert-success">✅ <?= View::e($flash) ?></div><?php endif; ?>
-<?php if ($error): ?><div class="alert alert-error">⚠️ <?= View::e($error) ?></div><?php endif; ?>
+<?php include ROOT_PATH . '/views/partials/flash.php'; ?>
 
 
 <div class="page-header">
@@ -73,7 +72,7 @@ $statusLabels = [
         </thead>
         <tbody>
         <?php foreach ($appointments as $a):
-            [$lbl, $cls] = $statusLabels[$a['status']] ?? ['—', 'pending'];
+            [$statusLabel, $statusCls] = $statusLabels[$a['status']] ?? ['—', 'pending'];
         ?>
         <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
             <td style="padding:11px 16px">
@@ -89,7 +88,7 @@ $statusLabels = [
                 <?php endif; ?>
             </td>
             <td style="padding:11px 16px"><?= date('d.m.Y H:i', strtotime($a['scheduled_at'])) ?></td>
-            <td style="padding:11px 16px"><span class="badge badge-<?= $cls ?>"><?= $lbl ?></span></td>
+            <td style="padding:11px 16px"><?php include ROOT_PATH . '/views/partials/status-badge.php'; ?></td>
             <td style="padding:11px 16px">
                 <div style="display:flex;gap:6px;flex-wrap:wrap">
                 <?php if ($a['status'] === 'pending'): ?>

@@ -6,14 +6,9 @@ namespace App\Repositories;
 use App\Core\Database;
 use PDO;
 
-class VisitRepository
+class VisitRepository extends BaseRepository
 {
-    private PDO $db;
-
-    public function __construct()
-    {
-        $this->db = Database::getInstance();
-    }
+    protected string $table = 'visits';
 
     /** Найти визит по appointment_id */
     public function findByAppointmentId(int $appointmentId): ?array
@@ -122,5 +117,30 @@ class VisitRepository
         }
 
         return $visits;
+    }
+
+    public function findByIdForPatient(int $visitId, int $patientId): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT v.id, v.complaints, v.examination, v.diagnosis,
+                    v.started_at, v.ended_at,
+                    a.scheduled_at,
+                    d.full_name AS doctor_name,
+                    d.photo_url AS doctor_photo,
+                    s.name AS specialization,
+                    p.full_name AS patient_name,
+                    p.birth_date AS patient_birth_date,
+                    p.phone AS patient_phone
+             FROM visits v
+             JOIN appointments a ON a.id = v.appointment_id
+             JOIN doctors d      ON d.id = a.doctor_id
+             JOIN specializations s ON s.id = d.specialization_id
+             JOIN patients p     ON p.id = a.patient_id
+             WHERE v.id = ? AND a.patient_id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$visitId, $patientId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
     }
 }

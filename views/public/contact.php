@@ -29,6 +29,7 @@ require ROOT_PATH . '/views/layout/public_header.php';
             </div>
         <?php else: ?>
             <form method="POST" action="<?= BASE_URL ?>/contact">
+                <input type="hidden" name="csrf_token" value="<?= View::e($csrf) ?>">
                 <div class="form-group">
                     <label for="name">Ваше имя</label>
                     <input type="text" id="name" name="name" required placeholder="Иван Иванов">

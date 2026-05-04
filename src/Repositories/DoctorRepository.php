@@ -6,14 +6,9 @@ namespace App\Repositories;
 use App\Core\Database;
 use PDO;
 
-class DoctorRepository
+class DoctorRepository extends BaseRepository
 {
-    private PDO $db;
-
-    public function __construct()
-    {
-        $this->db = Database::getInstance();
-    }
+    protected string $table = 'doctors';
 
     /**
      * Все врачи со специализацией и средним рейтингом
@@ -131,6 +126,14 @@ class DoctorRepository
         return $this->db->query(
             'SELECT id, name FROM specializations ORDER BY name'
         )->fetchAll();
+    }
+
+    public function update(int $doctorId, string $bio, string $photoUrl): void
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE doctors SET bio = ?, photo_url = ? WHERE id = ?"
+        );
+        $stmt->execute([$bio, $photoUrl, $doctorId]);
     }
 
     /** Расписание врача */

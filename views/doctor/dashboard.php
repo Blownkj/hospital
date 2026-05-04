@@ -1,7 +1,6 @@
 <?php use App\Core\View; require ROOT_PATH . '/views/layout/public_header.php'; ?>
 
-<?php if ($flash): ?><div class="alert alert-success">✅ <?= View::e($flash) ?></div><?php endif; ?>
-<?php if ($error): ?><div class="alert alert-error">⚠️ <?= View::e($error) ?></div><?php endif; ?>
+<?php include ROOT_PATH . '/views/partials/flash.php'; ?>
 
 <!-- Статистика -->
 <div class="dash-grid" style="margin-bottom:24px">
@@ -67,12 +66,12 @@
     <?php else: ?>
         <?php foreach ($today as $appt): ?>
             <?php
-                $statusLabels = [
+                $statusMap = [
                     'pending'     => ['⏳ Ожидает',    'pending'],
                     'confirmed'   => ['✓ Подтверждена', 'confirmed'],
                     'in_progress' => ['▶ Идёт приём',   'in-progress'],
                 ];
-                [$label, $cls] = $statusLabels[$appt['status']] ?? ['—', 'pending'];
+                [$statusLabel, $statusCls] = $statusMap[$appt['status']] ?? ['—', 'pending'];
                 $age = (int) date('Y') - (int) substr($appt['patient_birth_date'], 0, 4);
             ?>
             <div class="appt-row" style="align-items:flex-start;flex-direction:column;gap:10px">
@@ -90,7 +89,7 @@
                         </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:10px">
-                        <span class="badge badge-<?= $cls ?>"><?= $label ?></span>
+                        <?php include ROOT_PATH . '/views/partials/status-badge.php'; ?>
                         <a href="<?= BASE_URL ?>/doctor/appointment/<?= (int)$appt['id'] ?>"
                            class="btn btn-primary" style="padding:7px 16px;font-size:13px">
                             <?= $appt['status'] === 'in_progress' ? '▶ Продолжить' : 'Открыть' ?>

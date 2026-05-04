@@ -6,9 +6,7 @@ require ROOT_PATH . '/views/layout/public_header.php';
 <a href="<?= BASE_URL ?>/patient/dashboard" class="back-link">← Личный кабинет</a>
 <h1 class="page-title mb-3">Запись к врачу</h1>
 
-<?php if ($error): ?>
-    <div class="alert alert-error"><?= View::e($error) ?></div>
-<?php endif; ?>
+<?php include ROOT_PATH . '/views/partials/flash.php'; ?>
 
 <!-- Шаг 1: Специализация -->
 <div class="booking-step">

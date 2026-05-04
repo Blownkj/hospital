@@ -6,14 +6,9 @@ namespace App\Repositories;
 use App\Core\Database;
 use PDO;
 
-class ReviewRepository
+class ReviewRepository extends BaseRepository
 {
-    private PDO $db;
-
-    public function __construct()
-    {
-        $this->db = Database::getInstance();
-    }
+    protected string $table = 'reviews';
 
     /** Уже оставил ли пациент отзыв на этого врача? */
     public function exists(int $patientId, int $doctorId): bool
@@ -91,5 +86,34 @@ class ReviewRepository
         );
         $stmt->execute([$patientId]);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Рейтинги для массива doctorId.
+     * Возвращает: [ doctorId => ['avg_rating' => float, 'review_count' => int], ... ]
+     */
+    public function ratingsByDoctorIds(array $doctorIds): array
+    {
+        if (empty($doctorIds)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($doctorIds), '?'));
+        $stmt = $this->db->prepare(
+            "SELECT doctor_id,
+                    ROUND(AVG(rating), 1) AS avg_rating,
+                    COUNT(*) AS review_count
+             FROM reviews
+             WHERE doctor_id IN ({$placeholders}) AND is_approved = 1
+             GROUP BY doctor_id"
+        );
+        $stmt->execute($doctorIds);
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(int)$row['doctor_id']] = [
+                'avg_rating'   => (float)$row['avg_rating'],
+                'review_count' => (int)$row['review_count'],
+            ];
+        }
+        return $result;
     }
 }

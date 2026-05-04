@@ -7,18 +7,21 @@ use App\Core\Session;
 use App\Core\View;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\AdminRepository;
-use App\Repositories\DoctorRepository;
 use App\Repositories\AppointmentRepository;
+use App\Repositories\DoctorRepository;
+use App\Repositories\UserRepository;
 
-class AdminController
+class AdminController extends BaseController
 {
     private AdminRepository $repo;
     private AppointmentRepository $appointments;
+    private UserRepository $users;
 
     public function __construct()
     {
-        $this->repo = new AdminRepository();
+        $this->repo         = new AdminRepository();
         $this->appointments = new AppointmentRepository();
+        $this->users        = new UserRepository();
     }
 
     // ── Дашборд ──────────────────────────────────────────────────────────────
@@ -534,11 +537,7 @@ class AdminController
         }
 
         // Проверка дубликата email
-        $check = \App\Core\Database::getInstance()->prepare(
-            "SELECT id FROM users WHERE email = ? LIMIT 1"
-        );
-        $check->execute([$email]);
-        if ($check->fetch()) {
+        if ($this->users->emailExists($email)) {
             Session::setFlash('error', 'Пользователь с таким email уже существует.');
             AuthMiddleware::redirect('/admin/doctors/create');
         }
@@ -616,13 +615,4 @@ class AdminController
         AuthMiddleware::redirect('/admin/doctors');
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private function validateCsrf(): void
-    {
-        if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
-            http_response_code(419);
-            die('CSRF-токен недействителен.');
-        }
-    }
 }

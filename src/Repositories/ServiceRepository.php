@@ -6,14 +6,9 @@ namespace App\Repositories;
 use App\Core\Database;
 use PDO;
 
-class ServiceRepository
+class ServiceRepository extends BaseRepository
 {
-    private PDO $db;
-
-    public function __construct()
-    {
-        $this->db = Database::getInstance();
-    }
+    protected string $table = 'services';
 
     /**
      * Все услуги, сгруппированные по специализации
@@ -81,10 +76,11 @@ class ServiceRepository
         $stmt->execute([$name, $price, $specId ?: null, $desc, $id]);
     }
 
-    public function delete(int $id): void
+    public function delete(int $id): bool
     {
         $stmt = $this->db->prepare('DELETE FROM services WHERE id = ?');
         $stmt->execute([$id]);
+        return $stmt->rowCount() > 0;
     }
     
 }

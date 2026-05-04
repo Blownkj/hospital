@@ -41,28 +41,7 @@ require ROOT_PATH . '/views/layout/public_header.php';
 <div class="section-title">Наши специалисты</div>
 <div class="doctors-grid">
     <?php foreach (array_slice($doctors, 0, 4) as $doctor): ?>
-        <a href="<?= BASE_URL ?>/doctors/<?= (int)$doctor['id'] ?>"
-           class="doctor-card clickable">
-            <div class="doctor-avatar">
-                <?= View::e(View::initials($doctor['full_name'])) ?>
-            </div>
-            <div class="doctor-name"><?= View::e($doctor['full_name']) ?></div>
-            <div class="doctor-spec"><?= View::e($doctor['specialization']) ?></div>
-            <div class="doctor-bio">
-                <?= View::e(mb_strimwidth($doctor['bio'] ?? '', 0, 90, '...')) ?>
-            </div>
-            <?php if ($doctor['avg_rating']): ?>
-                <div class="doctor-rating">
-                    <span class="stars"><?= View::stars($doctor['avg_rating']) ?></span>
-                    <span>
-                        <?= View::e($doctor['avg_rating']) ?>
-                        (<?= (int)$doctor['review_count'] ?> отз.)
-                    </span>
-                </div>
-            <?php else: ?>
-                <div class="doctor-rating text-muted">Отзывов пока нет</div>
-            <?php endif; ?>
-        </a>
+        <?php $clickable = true; include ROOT_PATH . '/views/partials/doctor-card.php'; ?>
     <?php endforeach; ?>
 </div>
 <p style="text-align:center;margin-bottom:48px">

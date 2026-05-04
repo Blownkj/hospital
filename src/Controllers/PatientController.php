@@ -10,12 +10,12 @@ use App\Repositories\AppointmentRepository;
 use App\Repositories\DoctorRepository;
 use App\Repositories\LabTestRepository;
 use App\Repositories\PatientRepository;
+use App\Repositories\UserRepository;
 use App\Services\AppointmentService;
 use App\Repositories\VisitRepository;
 use App\Repositories\ReviewRepository;
-use App\Core\Database;
 
-class PatientController
+class PatientController extends BaseController
 {
     private PatientRepository     $patients;
     private DoctorRepository      $doctors;
@@ -24,6 +24,7 @@ class PatientController
     private LabTestRepository     $labTests;
     private VisitRepository       $visits;
     private ReviewRepository      $reviews;
+    private UserRepository        $users;
 
     public function __construct()
     {
@@ -35,6 +36,7 @@ class PatientController
         $this->labTests           = new LabTestRepository();
         $this->visits             = new VisitRepository();
         $this->reviews            = new ReviewRepository();
+        $this->users              = new UserRepository();
     }
 
     // ── Дашборд ───────────────────────────────────────────────────────────
@@ -72,26 +74,7 @@ class PatientController
         AuthMiddleware::requireRole('patient');
         $patient = $this->currentPatient();
 
-        $stmt = \App\Core\Database::getInstance()->prepare(
-            "SELECT v.id, v.complaints, v.examination, v.diagnosis,
-                    v.started_at, v.ended_at,
-                    a.scheduled_at,
-                    d.full_name AS doctor_name,
-                    d.photo_url AS doctor_photo,
-                    s.name AS specialization,
-                    p.full_name AS patient_name,
-                    p.birth_date AS patient_birth_date,
-                    p.phone AS patient_phone
-            FROM visits v
-            JOIN appointments a ON a.id = v.appointment_id
-            JOIN doctors d ON d.id = a.doctor_id
-            JOIN specializations s ON s.id = d.specialization_id
-            JOIN patients p ON p.id = a.patient_id
-            WHERE v.id = ? AND a.patient_id = ?
-            LIMIT 1"
-        );
-        $stmt->execute([(int) $visitId, (int) $patient['id']]);
-        $visit = $stmt->fetch();
+        $visit = $this->visits->findByIdForPatient((int)$visitId, (int)$patient['id']);
 
         if (!$visit) {
             http_response_code(403);
@@ -140,17 +123,9 @@ class PatientController
             AuthMiddleware::redirect('/patient/profile');
         }
 
-        $stmt = \App\Core\Database::getInstance()->prepare(
-            "UPDATE patients
-            SET full_name = ?, phone = ?, address = ?,
-                chronic_diseases = ?, birth_date = ?
-            WHERE id = ?"
+        $this->patients->update(
+            (int)$patient['id'], $fullName, $phone, $address, $chronic, $birthDate
         );
-        $stmt->execute([
-            $fullName, $phone, $address,
-            $chronic, $birthDate,
-            (int) $patient['id']
-        ]);
 
         Session::setFlash('success', 'Профиль обновлён.');
         AuthMiddleware::redirect('/patient/profile');
@@ -269,22 +244,12 @@ class PatientController
             AuthMiddleware::redirect('/patient/profile');
         }
 
-        // Получить текущий hash из users
-        $stmt = Database::getInstance()->prepare(
-            "SELECT password_hash FROM users WHERE id = ? LIMIT 1"
-        );
-        $stmt->execute([(int) Session::get('user_id')]);
-        $user = $stmt->fetch();
+        $ok = $this->users->changePassword((int)Session::get('user_id'), $current, $new);
 
-        if (!$user || !password_verify($current, $user['password_hash'])) {
+        if (!$ok) {
             Session::setFlash('error', 'Текущий пароль введён неверно.');
             AuthMiddleware::redirect('/patient/profile');
         }
-
-        $newHash = password_hash($new, PASSWORD_BCRYPT);
-        Database::getInstance()->prepare(
-            "UPDATE users SET password_hash = ? WHERE id = ?"
-        )->execute([$newHash, (int) Session::get('user_id')]);
 
         Session::setFlash('success', 'Пароль успешно изменён.');
         AuthMiddleware::redirect('/patient/profile');
@@ -444,14 +409,6 @@ class PatientController
             'flash'       => Session::getFlash('success'),
             'error'       => Session::getFlash('error'),
         ]);
-    }
-
-        private function validateCsrf(): void
-    {
-        if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
-            http_response_code(419);
-            die('CSRF-токен недействителен.');
-        }
     }
 
     // POST /patient/reviews/submit
