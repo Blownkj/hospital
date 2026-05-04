@@ -10,8 +10,7 @@ $genderMap = ['m' => 'Мужской', 'f' => 'Женский', 'other' => 'Др
 
 <a href="<?= BASE_URL ?>/doctor/dashboard" class="back-link">← Список приёмов</a>
 
-<?php if ($flash): ?><div class="alert alert-success">✅ <?= View::e($flash) ?></div><?php endif; ?>
-<?php if ($error): ?><div class="alert alert-error">⚠️ <?= View::e($error) ?></div><?php endif; ?>
+<?php include ROOT_PATH . '/views/partials/flash.php'; ?>
 
 <!-- Шапка -->
 <div class="page-header">
@@ -39,16 +38,16 @@ $genderMap = ['m' => 'Мужской', 'f' => 'Женский', 'other' => 'Др
     <!-- Карточка пациента -->
     <div class="card">
         <div class="card-title">👤 Данные пациента</div>
-        <table style="width:100%;font-size:13px;border-collapse:collapse">
-            <tr><td class="text-muted" style="padding:5px 0;width:40%">Email</td>
+        <table class="info-table">
+            <tr><td class="text-muted" style="width:40%">Email</td>
                 <td><?= View::e($appt['patient_email']) ?></td></tr>
-            <tr><td class="text-muted" style="padding:5px 0">Телефон</td>
+            <tr><td class="text-muted">Телефон</td>
                 <td><?= View::e($appt['patient_phone'] ?: '—') ?></td></tr>
-            <tr><td class="text-muted" style="padding:5px 0">Дата рождения</td>
+            <tr><td class="text-muted">Дата рождения</td>
                 <td><?= date('d.m.Y', strtotime($appt['patient_birth_date'])) ?> (<?= $age ?> лет)</td></tr>
-            <tr><td class="text-muted" style="padding:5px 0">Пол</td>
+            <tr><td class="text-muted">Пол</td>
                 <td><?= View::e($genderMap[$appt['gender']] ?? '—') ?></td></tr>
-            <tr><td class="text-muted" style="padding:5px 0">Адрес</td>
+            <tr><td class="text-muted">Адрес</td>
                 <td><?= View::e($appt['address'] ?: '—') ?></td></tr>
         </table>
     </div>
@@ -110,7 +109,7 @@ $genderMap = ['m' => 'Мужской', 'f' => 'Женский', 'other' => 'Др
                 <label>Диагноз</label>
                 <textarea name="diagnosis" rows="2" placeholder="Установленный диагноз..."><?= View::e($visit['diagnosis'] ?? '') ?></textarea>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div class="flex-row" style="flex-wrap:wrap;gap:10px">
                 <button type="submit" class="btn btn-secondary" style="flex:1">💾 Сохранить</button>
                 <button type="submit" name="finish" value="1" class="btn btn-primary" style="flex:1"
                     onclick="return confirm('Завершить приём и сохранить протокол?')">
@@ -172,7 +171,7 @@ $genderMap = ['m' => 'Мужской', 'f' => 'Женский', 'other' => 'Др
                 <input type="text" name="dosage" placeholder="Доза / срок" style="padding:8px 10px;border:1px solid #dde0e8;border-radius:8px;font-size:13px">
                 <input type="text" name="notes" placeholder="Примечания" style="padding:8px 10px;border:1px solid #dde0e8;border-radius:8px;font-size:13px">
             </div>
-            <button type="submit" class="btn btn-secondary" style="width:100%;font-size:13px">+ Добавить назначение</button>
+            <button type="submit" class="btn btn-secondary btn-block" style="font-size:13px">+ Добавить назначение</button>
         </form>
         <?php endif; ?>
     </div>

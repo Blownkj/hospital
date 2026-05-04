@@ -111,9 +111,26 @@ class VisitRepository extends BaseRepository
         $stmt->execute([$patientId]);
         $visits = $stmt->fetchAll();
 
-        // Подгружаем назначения для каждого визита
+        if (empty($visits)) {
+            return [];
+        }
+
+        $visitIds     = array_column($visits, 'visit_id');
+        $placeholders = implode(',', array_fill(0, count($visitIds), '?'));
+        $pStmt        = $this->db->prepare(
+            "SELECT * FROM prescriptions
+             WHERE visit_id IN ($placeholders)
+             ORDER BY visit_id, id"
+        );
+        $pStmt->execute($visitIds);
+
+        $byVisit = [];
+        foreach ($pStmt->fetchAll() as $p) {
+            $byVisit[$p['visit_id']][] = $p;
+        }
+
         foreach ($visits as &$visit) {
-            $visit['prescriptions'] = $this->getPrescriptions($visit['visit_id']);
+            $visit['prescriptions'] = $byVisit[$visit['visit_id']] ?? [];
         }
 
         return $visits;

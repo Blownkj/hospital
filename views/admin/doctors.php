@@ -62,14 +62,14 @@ $doctors = $doctors ?? [];
     ?>
 <?php else: ?>
     <div class="card" style="padding:0;overflow:hidden">
-        <table class="table" style="width:100%;border-collapse:collapse">
+        <table class="table">
             <thead>
-            <tr style="background:#f6f8fb">
-                <th style="text-align:left;padding:10px 12px;font-size:12px;color:#666">ФИО</th>
-                <th style="text-align:left;padding:10px 12px;font-size:12px;color:#666">Email</th>
-                <th style="text-align:left;padding:10px 12px;font-size:12px;color:#666">Специализация</th>
-                <th style="text-align:left;padding:10px 12px;font-size:12px;color:#666">Статус</th>
-                <th style="text-align:right;padding:10px 12px;font-size:12px;color:#666;width:260px">Действия</th>
+            <tr>
+                <th>ФИО</th>
+                <th>Email</th>
+                <th>Специализация</th>
+                <th>Статус</th>
+                <th style="text-align:right;width:260px">Действия</th>
             </tr>
             </thead>
             <tbody>
@@ -77,25 +77,25 @@ $doctors = $doctors ?? [];
                 <?php
                     $isActive = (($d['role'] ?? '') === 'doctor');
                 ?>
-                <tr style="border-top:1px solid #eef0f4">
-                    <td style="padding:10px 12px">
+                <tr>
+                    <td>
                         <div style="font-weight:600"><?= View::e($d['full_name'] ?? '') ?></div>
                         <?php if (!empty($d['bio'] ?? '')): ?>
-                            <div class="text-muted" style="font-size:12px;margin-top:2px">
+                            <div class="muted-sm" style="margin-top:2px">
                                 <?= View::e(mb_strimwidth((string)($d['bio'] ?? ''), 0, 120, '...')) ?>
                             </div>
                         <?php endif; ?>
                     </td>
-                    <td style="padding:10px 12px"><?= View::e($d['email'] ?? '—') ?></td>
-                    <td style="padding:10px 12px"><?= View::e($d['specialization'] ?? '—') ?></td>
-                    <td style="padding:10px 12px">
+                    <td><?= View::e($d['email'] ?? '—') ?></td>
+                    <td><?= View::e($d['specialization'] ?? '—') ?></td>
+                    <td>
                         <?php if ($isActive): ?>
                             <span class="badge" style="background:#e8fff1;color:#0b7a3b;border:1px solid #baf2cf;padding:2px 8px;border-radius:999px;font-size:12px">Активен</span>
                         <?php else: ?>
                             <span class="badge" style="background:#fff1f1;color:#a30f0f;border:1px solid #ffd1d1;padding:2px 8px;border-radius:999px;font-size:12px">Отключён</span>
                         <?php endif; ?>
                     </td>
-                    <td style="padding:10px 12px;text-align:right;white-space:nowrap">
+                    <td style="text-align:right;white-space:nowrap">
                         <a class="btn btn-sm" style="border:1px solid #dde0e8" href="<?= BASE_URL ?>/admin/doctors/<?= (int)$d['id'] ?>/edit">Редактировать</a>
 
                         <?php if ($isActive): ?>

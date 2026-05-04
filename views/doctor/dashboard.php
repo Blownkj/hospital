@@ -6,28 +6,28 @@
 <div class="dash-grid" style="margin-bottom:24px">
     <div class="dash-widget">
         <div class="dash-widget-icon">📅</div>
-        <div style="font-size:24px;font-weight:700;color:#4a90e2">
+        <div class="stat-value" style="color:#4a90e2">
             <?= (int)$stats['this_month'] ?>
         </div>
         <div class="dash-widget-label">Приёмов за месяц</div>
     </div>
     <div class="dash-widget">
         <div class="dash-widget-icon">✅</div>
-        <div style="font-size:24px;font-weight:700;color:#16a34a">
+        <div class="stat-value" style="color:#16a34a">
             <?= (int)$stats['completed'] ?>
         </div>
         <div class="dash-widget-label">Всего завершено</div>
     </div>
     <div class="dash-widget">
         <div class="dash-widget-icon">⏳</div>
-        <div style="font-size:24px;font-weight:700;color:#d97706">
+        <div class="stat-value" style="color:#d97706">
             <?= (int)$stats['upcoming'] ?>
         </div>
         <div class="dash-widget-label">Предстоящих</div>
     </div>
     <div class="dash-widget">
         <div class="dash-widget-icon">⭐</div>
-        <div style="font-size:24px;font-weight:700;color:#7c3aed">
+        <div class="stat-value" style="color:#7c3aed">
             <?= $stats['avg_rating'] > 0
                 ? $stats['avg_rating'] . ' <span style="font-size:14px;color:#aaa">/ 5</span>'
                 : '—' ?>
@@ -35,7 +35,7 @@
         <div class="dash-widget-label">
             Рейтинг
             <?php if ($stats['review_count'] > 0): ?>
-                <span class="text-muted" style="font-size:11px">
+                <span class="muted-sm">
                     (<?= $stats['review_count'] ?> отз.)
                 </span>
             <?php endif; ?>

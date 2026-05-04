@@ -5,8 +5,7 @@ require ROOT_PATH . '/views/layout/public_header.php';
 
 <a href="<?= BASE_URL ?>/admin/dashboard" class="back-link">← Дашборд</a>
 
-<?php if ($flash): ?><div class="alert alert-success">✅ <?= View::e($flash) ?></div><?php endif; ?>
-<?php if ($error): ?><div class="alert alert-error">⚠️ <?= View::e($error) ?></div><?php endif; ?>
+<?php include ROOT_PATH . '/views/partials/flash.php'; ?>
 
 <div class="page-header">
     <h1 class="page-title">Модерация отзывов</h1>
@@ -41,11 +40,11 @@ require ROOT_PATH . '/views/layout/public_header.php';
                     <?= View::e($r['text']) ?>
                 </p>
             <?php endif; ?>
-            <div class="text-muted" style="font-size:11px;margin-top:6px">
+            <div class="muted-sm" style="margin-top:6px">
                 <?= date('d.m.Y H:i', strtotime($r['created_at'])) ?>
             </div>
         </div>
-        <div style="display:flex;gap:8px">
+        <div class="flex-row">
             <form method="POST" action="<?= BASE_URL ?>/admin/review/<?= (int)$r['id'] ?>/approve">
                 <input type="hidden" name="csrf_token" value="<?= View::e($csrf) ?>">
                 <button class="btn btn-primary" style="padding:7px 16px;font-size:13px">✓ Опубликовать</button>
@@ -90,7 +89,7 @@ require ROOT_PATH . '/views/layout/public_header.php';
                     <?= View::e($r['text']) ?>
                 </p>
             <?php endif; ?>
-            <div class="text-muted" style="font-size:11px;margin-top:4px">
+            <div class="muted-sm" style="margin-top:4px">
                 <?= date('d.m.Y H:i', strtotime($r['created_at'])) ?>
             </div>
 
@@ -98,7 +97,7 @@ require ROOT_PATH . '/views/layout/public_header.php';
             <div style="margin-top:12px;padding:10px 14px;background:var(--color-bg-secondary,#f8f9fa);border-left:3px solid var(--color-primary,#3b82f6);border-radius:4px">
                 <div style="font-size:12px;font-weight:600;margin-bottom:4px;color:var(--color-primary,#3b82f6)">Ответ клиники</div>
                 <p style="font-size:13px;line-height:1.6;margin:0"><?= View::e($r['admin_reply']) ?></p>
-                <div class="text-muted" style="font-size:11px;margin-top:4px">
+                <div class="muted-sm" style="margin-top:4px">
                     <?= date('d.m.Y H:i', strtotime($r['admin_reply_at'])) ?>
                 </div>
             </div>

@@ -39,7 +39,7 @@ public/index.php   ──►  Router  ──►  Controllers  ──►  Service
 
 ## План рефакторинга по группам файлов
 
-### Группа 1 — Безопасность (impact: ВЫСОКИЙ, effort: НИЗКИЙ) ⚠
+### Группа 1 — Безопасность ✅ ВЫПОЛНЕНО
 
 **Цель:** закрыть конкретные дыры до любого рефакторинга.
 
@@ -56,7 +56,7 @@ public/index.php   ──►  Router  ──►  Controllers  ──►  Service
 
 ---
 
-### Группа 2 — Базовые абстракции (impact: ВЫСОКИЙ, effort: СРЕДНИЙ)
+### Группа 2 — Базовые абстракции ✅ ВЫПОЛНЕНО
 
 **Цель:** убрать корень дублирования. Без этого любые «новые фичи» будут множить старый долг.
 
@@ -85,41 +85,36 @@ public/index.php   ──►  Router  ──►  Controllers  ──►  Service
 
 ---
 
-### Группа 3 — Дедупликация SQL и шаблонов (impact: СРЕДНИЙ, effort: СРЕДНИЙ)
+### Группа 3 — Дедупликация SQL и шаблонов ✅ ВЫПОЛНЕНО
 
-#### 3.1 Inline SQL → репозитории (6 мест)
-| Источник | Куда |
-|---|---|
-| `PublicController.php:54-70` (4 SQL-метода статистики) | Новый `StatisticsRepository.php` |
-| `PatientController.php:75-94` (visit с проверкой владельца) | `VisitRepository::findByIdForPatient(int, int)` |
-| `PatientController.php:143-153` | Использовать существующий `PatientRepository::update` |
-| `PatientController.php:273-287` (смена пароля) | Новый `UserRepository::changePassword(int, string)` + транзакция |
-| `DoctorController.php:227-230` | `DoctorRepository::update` |
-| `AdminController.php:537-544` | `UserRepository::findByEmail` (уже есть, использовать) |
+#### 3.1 Inline SQL → репозитории ✅
+- `StatisticsRepository.php` создан; PublicController переведён на него
+- `VisitRepository::findByIdForPatient`, `UserRepository::changePassword`, `DoctorRepository::update` добавлены
+- AdminController::createDoctor использует `UserRepository::emailExists`
 
-#### 3.2 Дедупликация SQL рейтинга
-- Извлечь общий `SELECT ROUND(AVG(rating),1), COUNT(*) FROM reviews WHERE doctor_id IN (...)` в `ReviewRepository::ratingsByDoctorIds(array): array`
-- Заменить 5 мест: `DoctorRepository:31,55,98`, `ReviewRepository:57`, `AppointmentRepository:173`
+#### 3.2 Дедупликация SQL рейтинга ✅
+- `ReviewRepository::ratingsByDoctorIds(array): array` — единая реализация рейтинга
+- Заменено в 5 местах: DoctorRepository, ReviewRepository, AppointmentRepository
 
-#### 3.3 N+1 в истории визитов
-- `VisitRepository::getFullHistoryForPatient` (строка 121) — заменить foreach + getPrescriptions на 1 запрос с JOIN + группировка в PHP по `visit_id`
+#### 3.3 N+1 в истории визитов ✅
+- `VisitRepository::getFullHistoryForPatient` — вместо foreach + getPrescriptions():
+  2 запроса (visits + bulk `WHERE visit_id IN (...)`) + группировка в PHP по `visit_id`
 
-#### 3.4 Partials для дублирующейся разметки
-- Новый каталог `views/partials/`
-- Файлы: `doctor-card.php`, `appointment-row.php`, `flash.php`, `status-badge.php`, `empty-state.php`
-- Включать через `include` с локальными переменными
-- Затрагивает: `home.php`, `doctors.php`, `doctor.php`, `book.php`, `admin/doctors.php`, `patient/appointments.php`, `admin/appointments.php`, `doctor/dashboard.php`
+#### 3.4 Partials ✅
+- `views/partials/` создан: `flash.php`, `doctor-card.php`, `status-badge.php`, `empty-state.php`, `appointment-row.php`
+- Применено в: home.php, doctors.php, book.php, patient/appointments.php, admin/doctors.php,
+  admin/appointments.php, doctor/dashboard.php, admin/reviews.php, doctor/appointment.php
 
-#### 3.5 CSS-чистка
-- `public/css/main.css`: удалить дубль `.reviews-*` (строки 464-572), мёртвые `.price-table`, `.spec-card`
-- Добавить утилитарные классы: `.muted-sm`, `.stat-value`, `.flex-row`, `.stack-sm`
-- Заменить ~50 наиболее частых inline-стилей
-
-**Окно работ:** 3-4 захода. Самая объёмная группа по диффу.
+#### 3.5 CSS-чистка ✅
+- Удалён дубль `.reviews-*` (~50 строк), дубль badge-определений
+- Исправлены цвета `.badge-completed`, `.badge-in-progress`
+- Добавлены утилиты: `.muted-sm`, `.stat-value`, `.flex-row`, `.stack-sm`; `.table`, `.info-table`
+- ~35 inline-стилей заменено в 4 view-файлах (dashboard, admin/doctors, admin/reviews, doctor/appointment)
+- Примечание: `.price-table` и `.spec-card` оставлены — они используются в services.php и book.php
 
 ---
 
-### Группа 4 — Индексы и пагинация (impact: СРЕДНИЙ, effort: НИЗКИЙ)
+### Группа 4 — Индексы и пагинация (impact: СРЕДНИЙ, effort: НИЗКИЙ) ← СЛЕДУЮЩИЙ ШАГ
 
 #### 4.1 Индексы (`database/migrations.sql`)
 ```
