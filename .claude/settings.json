@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(vendor/**)",
+      "Edit(vendor/**)",
+      "Write(vendor/**)"
+    ]
+  }
+}

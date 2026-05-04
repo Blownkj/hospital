@@ -1,0 +1,19 @@
+vendor/
+.env
+*.log
+.DS_Store
+Thumbs.db
+
+# Claude Code local overrides (do not commit)
+.claude/settings.local.json
+
+# Common runtime/output dirs (if they appear later)
+storage/
+cache/
+tmp/
+uploads/
+public/uploads/
+
+# PHPUnit / coverage (if added later)
+.phpunit.result.cache
+coverage/
