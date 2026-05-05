@@ -128,9 +128,12 @@ CREATE TABLE IF NOT EXISTS `appointments` (
                    NOT NULL DEFAULT 'pending',
     `created_at`   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    INDEX `idx_appt_patient`   (`patient_id`),
-    INDEX `idx_appt_doctor`    (`doctor_id`),
-    INDEX `idx_appt_scheduled` (`scheduled_at`),
+    INDEX `idx_appt_patient`          (`patient_id`),
+    INDEX `idx_appt_doctor`           (`doctor_id`),
+    INDEX `idx_appt_scheduled`        (`scheduled_at`),
+    INDEX `idx_appt_status_scheduled` (`status`, `scheduled_at`),
+    INDEX `idx_appt_doctor_status`    (`doctor_id`, `status`),
+    INDEX `idx_appt_patient_status`   (`patient_id`, `status`),
     CONSTRAINT `fk_appt_patient`
         FOREIGN KEY (`patient_id`) REFERENCES `patients`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_appt_doctor`
@@ -188,9 +191,10 @@ CREATE TABLE IF NOT EXISTS `reviews` (
     `admin_reply_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_reviews_appointment` (`appointment_id`),
-    INDEX `idx_reviews_doctor`  (`doctor_id`),
-    INDEX `idx_reviews_patient` (`patient_id`),
+    UNIQUE KEY `uq_reviews_appointment`      (`appointment_id`),
+    INDEX `idx_reviews_doctor`               (`doctor_id`),
+    INDEX `idx_reviews_doctor_approved`      (`doctor_id`, `is_approved`),
+    INDEX `idx_reviews_patient`              (`patient_id`),
     CONSTRAINT `fk_reviews_patient`
         FOREIGN KEY (`patient_id`) REFERENCES `patients`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_reviews_doctor`
@@ -217,3 +221,16 @@ CREATE TABLE IF NOT EXISTS `articles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================================
+-- Composite indexes — run once on existing installs
+-- (safe to re-run: ADD INDEX IF NOT EXISTS не поддерживается
+--  MySQL < 8.0.31, поэтому игнорировать ошибку 1061 вручную)
+-- ============================================================
+ALTER TABLE `appointments`
+    ADD INDEX `idx_appt_status_scheduled` (`status`, `scheduled_at`),
+    ADD INDEX `idx_appt_doctor_status`    (`doctor_id`, `status`),
+    ADD INDEX `idx_appt_patient_status`   (`patient_id`, `status`);
+
+ALTER TABLE `reviews`
+    ADD INDEX `idx_reviews_doctor_approved` (`doctor_id`, `is_approved`);

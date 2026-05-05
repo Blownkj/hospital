@@ -28,7 +28,6 @@ class PatientController extends BaseController
 
     public function __construct()
     {
-        AuthMiddleware::requireRole('patient');
         $this->patients           = new PatientRepository();
         $this->doctors            = new DoctorRepository();
         $this->appointments       = new AppointmentRepository();

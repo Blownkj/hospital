@@ -43,6 +43,64 @@ class AdminRepository extends BaseRepository
         return $stmt->fetchAll();
     }
 
+    public function countAppointments(string $status = '', string $date = ''): int
+    {
+        $where  = ['1=1'];
+        $params = [];
+
+        if ($status) {
+            $where[]  = 'a.status = ?';
+            $params[] = $status;
+        }
+        if ($date) {
+            $where[]  = 'DATE(a.scheduled_at) = ?';
+            $params[] = $date;
+        }
+
+        $sql  = "SELECT COUNT(*) FROM appointments a WHERE " . implode(' AND ', $where);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function getAllAppointmentsPaginated(
+        int    $limit,
+        int    $offset,
+        string $status = '',
+        string $date   = ''
+    ): array {
+        $where  = ['1=1'];
+        $params = [];
+
+        if ($status) {
+            $where[]  = 'a.status = ?';
+            $params[] = $status;
+        }
+        if ($date) {
+            $where[]  = 'DATE(a.scheduled_at) = ?';
+            $params[] = $date;
+        }
+
+        $sql = "SELECT a.id, a.scheduled_at, a.status, a.appointment_type,
+                       p.full_name AS patient_name, p.phone AS patient_phone,
+                       d.full_name AS doctor_name,
+                       s.name AS specialization
+                FROM appointments a
+                JOIN patients p ON p.id = a.patient_id
+                LEFT JOIN doctors d ON d.id = a.doctor_id
+                LEFT JOIN specializations s ON s.id = d.specialization_id
+                WHERE " . implode(' AND ', $where) . "
+                ORDER BY a.scheduled_at DESC
+                LIMIT ? OFFSET ?";
+
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public function findAppointmentById(int $id): ?array
     {
         $stmt = $this->db->prepare(

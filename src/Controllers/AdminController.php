@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Core\Session;
 use App\Core\View;
+use App\Core\Paginator;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\AdminRepository;
 use App\Repositories\AppointmentRepository;
@@ -28,7 +29,6 @@ class AdminController extends BaseController
 
     public function dashboard(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         $stats      = $this->repo->getStats();
         $byDay      = $this->repo->getAppointmentsByDay();
@@ -50,18 +50,24 @@ class AdminController extends BaseController
 
     public function appointments(): void
     {
-        AuthMiddleware::requireRole('admin');
 
-        $status = $_GET['status'] ?? '';
-        $date   = $_GET['date']   ?? '';
+        $status  = $_GET['status'] ?? '';
+        $date    = $_GET['date']   ?? '';
+        $page    = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = 25;
 
-        $appointments = $this->repo->getAllAppointments($status, $date);
+        $total     = $this->repo->countAppointments($status, $date);
+        $paginator = new Paginator($total, $perPage, $page);
+        $appointments = $this->repo->getAllAppointmentsPaginated(
+            $perPage, $paginator->offset, $status, $date
+        );
 
         View::render('admin/appointments', [
             'pageTitle'    => 'Управление записями',
             'appointments' => $appointments,
             'status'       => $status,
             'date'         => $date,
+            'paginator'    => $paginator,
             'csrf'         => Session::generateCsrfToken(),
             'flash'        => Session::getFlash('success'),
             'error'        => Session::getFlash('error'),
@@ -70,7 +76,6 @@ class AdminController extends BaseController
 
     public function confirmAppointment(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $this->repo->updateAppointmentStatus((int) $id, 'confirmed');
@@ -80,7 +85,6 @@ class AdminController extends BaseController
 
     public function cancelAppointment(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $this->repo->updateAppointmentStatus((int) $id, 'cancelled');
@@ -90,7 +94,6 @@ class AdminController extends BaseController
 
     public function rescheduleAppointment(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $newDatetime = trim($_POST['new_datetime'] ?? '');
@@ -109,7 +112,6 @@ class AdminController extends BaseController
 
     public function schedule(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         $doctors  = $this->repo->getAllDoctors();
         $doctorId = (int) ($_GET['doctor_id'] ?? ($doctors[0]['id'] ?? 0));
@@ -134,7 +136,6 @@ class AdminController extends BaseController
 
     public function saveSchedule(string $doctorId): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $did  = (int) $doctorId;
@@ -163,7 +164,6 @@ class AdminController extends BaseController
 
     public function reviews(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         $pending  = $this->repo->getPendingReviews();
         $approved = $this->repo->getApprovedReviews();
@@ -180,7 +180,6 @@ class AdminController extends BaseController
 
     public function approveReview(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $this->repo->approveReview((int) $id);
@@ -190,7 +189,6 @@ class AdminController extends BaseController
 
     public function deleteReview(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $this->repo->deleteReview((int) $id);
@@ -200,7 +198,6 @@ class AdminController extends BaseController
 
     public function replyToReview(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $reply = trim($_POST['reply'] ?? '');
@@ -220,7 +217,6 @@ class AdminController extends BaseController
     // GET /admin/doctors
     public function doctors(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         $query  = trim((string)($_GET['q'] ?? ''));
         $specId = (int)($_GET['spec'] ?? 0);
@@ -269,7 +265,6 @@ class AdminController extends BaseController
     // GET /admin/services
     public function services(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         $serviceRepo = new \App\Repositories\ServiceRepository();
         $doctorRepo  = new \App\Repositories\DoctorRepository();
@@ -287,7 +282,6 @@ class AdminController extends BaseController
     // POST /admin/services/create
     public function createService(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
             Session::setFlash('error', 'Недействительный токен.');
@@ -312,7 +306,6 @@ class AdminController extends BaseController
     // POST /admin/services/{id}/update
     public function updateService(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
 
         if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
             Session::setFlash('error', 'Недействительный токен.');
@@ -338,7 +331,6 @@ class AdminController extends BaseController
     // POST /admin/services/{id}/delete
     public function deleteService(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
 
         if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
             Session::setFlash('error', 'Недействительный токен.');
@@ -353,7 +345,6 @@ class AdminController extends BaseController
     // GET /admin/lab-tests
     public function labTests(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         View::render('admin/lab_tests', [
             'pageTitle' => 'Управление анализами',
@@ -367,7 +358,6 @@ class AdminController extends BaseController
     // POST /admin/lab-tests/create
     public function createLabTest(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
             Session::setFlash('error', 'Недействительный токен.');
@@ -394,7 +384,6 @@ class AdminController extends BaseController
     // POST /admin/lab-tests/{id}/update
     public function updateLabTest(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
 
         if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
             Session::setFlash('error', 'Недействительный токен.');
@@ -421,7 +410,6 @@ class AdminController extends BaseController
     // POST /admin/lab-tests/{id}/delete
     public function deleteLabTest(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
 
         if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
             Session::setFlash('error', 'Недействительный токен.');
@@ -436,7 +424,6 @@ class AdminController extends BaseController
     // GET /admin/appointments/export
     public function exportCsv(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         $from = $_GET['from'] ?? '';
         $to   = $_GET['to']   ?? '';
@@ -495,7 +482,6 @@ class AdminController extends BaseController
     // GET /admin/doctors/create
     public function createDoctorForm(): void
     {
-        AuthMiddleware::requireRole('admin');
 
         $specializations = $this->repo->getAllSpecializations();
 
@@ -511,7 +497,6 @@ class AdminController extends BaseController
     // POST /admin/doctors/create
     public function createDoctor(): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $email    = trim($_POST['email']      ?? '');
@@ -552,7 +537,6 @@ class AdminController extends BaseController
     // GET /admin/doctors/{id}/edit
     public function editDoctorForm(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
 
         $doctor          = $this->repo->findDoctorById((int) $id);
         $specializations = $this->repo->getAllSpecializations();
@@ -574,7 +558,6 @@ class AdminController extends BaseController
     // POST /admin/doctors/{id}/edit
     public function updateDoctor(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $doctorId = (int) $id;
@@ -596,7 +579,6 @@ class AdminController extends BaseController
     // POST /admin/doctors/{id}/deactivate
     public function deactivateDoctor(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $this->repo->deactivateDoctor((int) $id);
@@ -607,7 +589,6 @@ class AdminController extends BaseController
     // POST /admin/doctors/{id}/activate
     public function activateDoctor(string $id): void
     {
-        AuthMiddleware::requireRole('admin');
         $this->validateCsrf();
 
         $this->repo->activateDoctor((int) $id);

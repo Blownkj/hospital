@@ -29,7 +29,6 @@ class AuthController extends BaseController
     // GET /login
     public function showLogin(): void
     {
-        AuthMiddleware::requireGuest();
         View::render('auth/login', [
             'csrf'  => Session::generateCsrfToken(),
             'error' => Session::getFlash('error'),
@@ -39,26 +38,7 @@ class AuthController extends BaseController
     // POST /login
     public function doLogin(): void
     {
-        AuthMiddleware::requireGuest();
-
-        // Rate-limiting: не более 5 попыток за 15 минут
-        $attempts = (int)(Session::get('login_attempts') ?? 0);
-        $resetAt  = (int)(Session::get('login_attempts_reset_at') ?? 0);
-        $now      = time();
-
-        if ($resetAt && $now > $resetAt) {
-            $attempts = 0;
-            Session::set('login_attempts', 0);
-            Session::set('login_attempts_reset_at', 0);
-        }
-
-        if ($attempts >= 5) {
-            $wait = (int)ceil(($resetAt - $now) / 60);
-            Session::setFlash('error', "Слишком много попыток. Подождите {$wait} мин.");
-            AuthMiddleware::redirect('/login');
-        }
-
-        // CSRF-проверка
+        // CSRF-проверка (дублирует глобальный CsrfMiddleware — defence in depth)
         $token = $_POST['csrf_token'] ?? '';
         if (!Session::validateCsrfToken($token)) {
             Session::setFlash('error', 'Недействительный токен. Попробуйте снова.');
@@ -71,24 +51,16 @@ class AuthController extends BaseController
         $user = $this->auth->login($email, $password);
 
         if ($user === null) {
-            $attempts++;
-            Session::set('login_attempts', $attempts);
-            if ($attempts === 1) {
-                Session::set('login_attempts_reset_at', $now + 900);
-            }
             Session::setFlash('error', 'Неверный email или пароль.');
             AuthMiddleware::redirect('/login');
         }
 
-        Session::set('login_attempts', 0);
-        Session::set('login_attempts_reset_at', 0);
         AuthMiddleware::redirectToDashboard();
     }
 
     // GET /register
     public function showRegister(): void
     {
-        AuthMiddleware::requireGuest();
         View::render('auth/register', [
             'csrf'   => Session::generateCsrfToken(),
             'errors' => [],
@@ -99,7 +71,6 @@ class AuthController extends BaseController
     // POST /register
     public function doRegister(): void
     {
-        AuthMiddleware::requireGuest();
 
         $token = $_POST['csrf_token'] ?? '';
         if (!Session::validateCsrfToken($token)) {

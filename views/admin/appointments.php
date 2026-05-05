@@ -125,6 +125,38 @@ $statusLabels = [
     <?php endif; ?>
 </div>
 
+<?php if ($paginator->totalPages > 1):
+    $qs = static fn(int $p): string =>
+        http_build_query(['status' => $status, 'date' => $date, 'page' => $p]);
+?>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:13px">
+    <span class="text-muted">
+        Всего: <?= $paginator->total ?> &nbsp;|&nbsp;
+        Страница <?= $paginator->currentPage ?> из <?= $paginator->totalPages ?>
+    </span>
+    <div style="display:flex;gap:4px">
+        <?php if ($paginator->hasPrev()): ?>
+            <a href="?<?= $qs($paginator->prevPage()) ?>" class="btn-secondary"
+               style="padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none">←</a>
+        <?php endif; ?>
+
+        <?php foreach ($paginator->pages() as $p): ?>
+            <?php if ($p === $paginator->currentPage): ?>
+                <span style="padding:5px 10px;border-radius:6px;background:var(--color-primary);color:#fff;font-size:12px"><?= $p ?></span>
+            <?php else: ?>
+                <a href="?<?= $qs($p) ?>" class="btn-secondary"
+                   style="padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none"><?= $p ?></a>
+            <?php endif; ?>
+        <?php endforeach; ?>
+
+        <?php if ($paginator->hasNext()): ?>
+            <a href="?<?= $qs($paginator->nextPage()) ?>" class="btn-secondary"
+               style="padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none">→</a>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <script>
 function toggleReschedule(id) {
     const el = document.getElementById('rs-' + id);

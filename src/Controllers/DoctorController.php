@@ -30,7 +30,6 @@ class DoctorController extends BaseController
 
     public function dashboard(): void
     {
-        AuthMiddleware::requireRole('doctor');
 
         $userId   = (int) Session::get('user_id');
         $doctorId = $this->service->getDoctorIdByUserId($userId);
@@ -60,7 +59,6 @@ class DoctorController extends BaseController
     // GET /doctor/appointment/{id}
     public function appointment(string $id): void
     {
-        AuthMiddleware::requireRole('doctor');
 
         $appointmentId = (int) $id;
         $userId        = (int) Session::get('user_id');
@@ -94,7 +92,6 @@ class DoctorController extends BaseController
     // POST /doctor/appointment/{id}/start
     public function startAppointment(string $id): void
     {
-        AuthMiddleware::requireRole('doctor');
         $this->validateCsrf();
 
         $appointmentId = (int) $id;
@@ -117,7 +114,6 @@ class DoctorController extends BaseController
     // POST /doctor/appointment/{id}/protocol
     public function saveProtocol(string $id): void
     {
-        AuthMiddleware::requireRole('doctor');
         $this->validateCsrf();
 
         $appointmentId = (int) $id;
@@ -154,7 +150,6 @@ class DoctorController extends BaseController
     // POST /doctor/appointment/{id}/prescription/add
     public function addPrescription(string $id): void
     {
-        AuthMiddleware::requireRole('doctor');
         $this->validateCsrf();
 
         $appointmentId = (int) $id;
@@ -182,7 +177,6 @@ class DoctorController extends BaseController
     // POST /doctor/appointment/{id}/prescription/delete
     public function deletePrescription(string $id): void
     {
-        AuthMiddleware::requireRole('doctor');
         $this->validateCsrf();
 
         $appointmentId   = (int) $id;
@@ -197,7 +191,6 @@ class DoctorController extends BaseController
     // GET /doctor/profile
 public function profile(): void
 {
-    AuthMiddleware::requireRole('doctor');
 
     $userId  = (int) Session::get('user_id');
     $profile = $this->service->getDoctorProfile($userId);
@@ -218,7 +211,6 @@ public function profile(): void
     // POST /doctor/profile
     public function updateProfile(): void
     {
-        AuthMiddleware::requireRole('doctor');
         $this->validateCsrf();
 
         $userId   = (int) Session::get('user_id');
