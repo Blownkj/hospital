@@ -79,7 +79,7 @@ class LabTestRepository extends BaseRepository
         $stmt->execute([$name, $category, $price, $durationMin, $desc, $prep, $id]);
     }
 
-    public function delete(int $id): void
+    public function delete(int $id): bool
     {
         $stmt = $this->db->prepare('DELETE FROM lab_tests WHERE id=?');
         $stmt->execute([$id]);

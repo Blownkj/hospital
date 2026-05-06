@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Paginator;
 use App\Core\Session;
 use App\Core\View;
 use App\Middleware\AuthMiddleware;
@@ -14,18 +15,12 @@ use App\Repositories\StatisticsRepository;
 
 class PublicController extends BaseController
 {
-    private DoctorRepository     $doctors;
-    private ServiceRepository    $services;
-    private ArticleRepository    $articles;
-    private StatisticsRepository $statsRepo;
-
-    public function __construct()
-    {
-        $this->doctors   = new DoctorRepository();
-        $this->services  = new ServiceRepository();
-        $this->articles  = new ArticleRepository();
-        $this->statsRepo = new StatisticsRepository();
-    }
+    public function __construct(
+        private DoctorRepository     $doctors   = new DoctorRepository(),
+        private ServiceRepository    $services  = new ServiceRepository(),
+        private ArticleRepository    $articles  = new ArticleRepository(),
+        private StatisticsRepository $statsRepo = new StatisticsRepository(),
+    ) {}
 
     // GET /
     public function home(): void
@@ -102,18 +97,23 @@ class PublicController extends BaseController
 
     public function doctors(): void
     {
-        $query  = trim($_GET['q'] ?? '');
-        $specId = (int)($_GET['spec'] ?? 0);
-    
-        $doctors = $this->doctors->search($query, $specId);
-        $specs   = $this->doctors->getAllSpecializations();
-    
+        $query   = trim($_GET['q'] ?? '');
+        $specId  = (int)($_GET['spec'] ?? 0);
+        $page    = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 12;
+
+        $total     = $this->doctors->countSearch($query, $specId);
+        $paginator = new Paginator($total, $perPage, $page);
+        $doctors   = $this->doctors->search($query, $specId, $perPage, $paginator->offset);
+        $specs     = $this->doctors->getAllSpecializations();
+
         View::render('public/doctors', [
             'pageTitle' => 'Наши врачи',
             'doctors'   => $doctors,
             'specs'     => $specs,
             'query'     => $query,
             'specId'    => $specId,
+            'paginator' => $paginator,
         ]);
     }
 
@@ -221,7 +221,7 @@ class PublicController extends BaseController
         }
 
         View::render('public/doctor', [
-            'pageTitle'     => $doctor['full_name'],
+            'pageTitle'     => $doctor->fullName,
             'doctor'        => $doctor,
             'scheduleByDay' => $scheduleByDay,
             'reviews'       => $reviews,

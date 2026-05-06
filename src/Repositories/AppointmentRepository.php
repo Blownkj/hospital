@@ -212,11 +212,10 @@ class AppointmentRepository extends BaseRepository
         return $stmt->fetchAll();
     }
 
-    /** Один приём по id — с данными пациента */
-    public function findByIdWithPatient(int $appointmentId): ?array
+    /** Один приём по id — с данными пациента. Если передан $doctorId, проверяет принадлежность. */
+    public function findByIdWithPatient(int $appointmentId, ?int $doctorId = null): ?array
     {
-        $stmt = $this->db->prepare(
-            "SELECT a.id, a.scheduled_at, a.status, a.doctor_id,
+        $sql = "SELECT a.id, a.scheduled_at, a.status, a.doctor_id,
                     p.id AS patient_id, p.full_name AS patient_name,
                     p.birth_date AS patient_birth_date,
                     p.phone AS patient_phone, p.gender,
@@ -225,9 +224,17 @@ class AppointmentRepository extends BaseRepository
              FROM appointments a
              JOIN patients p ON p.id = a.patient_id
              JOIN users u ON u.id = p.user_id
-             WHERE a.id = ? LIMIT 1"
-        );
-        $stmt->execute([$appointmentId]);
+             WHERE a.id = ?";
+        $params = [$appointmentId];
+
+        if ($doctorId !== null) {
+            $sql .= ' AND a.doctor_id = ?';
+            $params[] = $doctorId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         $row = $stmt->fetch();
         return $row ?: null;
     }
@@ -255,6 +262,10 @@ class AppointmentRepository extends BaseRepository
     /** Обновить статус приёма */
     public function updateStatus(int $appointmentId, string $status): void
     {
+        $allowed = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
+        if (!in_array($status, $allowed, true)) {
+            throw new \InvalidArgumentException("Invalid appointment status: {$status}");
+        }
         $stmt = $this->db->prepare(
             "UPDATE appointments SET status = ? WHERE id = ?"
         );

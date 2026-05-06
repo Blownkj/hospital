@@ -5,6 +5,8 @@ namespace App\Services;
 
 use App\Core\Database;
 use App\Core\Session;
+use App\Exceptions\DomainException;
+use App\Exceptions\ForbiddenException;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\VisitRepository;
 use PDO;
@@ -48,30 +50,30 @@ class DoctorService
         return $row ?: null;
     }
 
-    /** Начать приём: создать визит, поменять статус */
-    public function startAppointment(int $appointmentId, int $doctorId): array
+    /** Начать приём: создать визит, поменять статус. @throws DomainException|ForbiddenException */
+    public function startAppointment(int $appointmentId, int $doctorId): void
     {
         $appt = $this->appointments->findByIdWithPatient($appointmentId);
 
         if (!$appt || (int) $appt['doctor_id'] !== $doctorId) {
-            return ['error' => 'Приём не найден.'];
+            throw new ForbiddenException('Приём не найден.');
         }
 
         if (!in_array($appt['status'], ['pending', 'confirmed'], true)) {
-            return ['error' => 'Этот приём нельзя начать (статус: ' . $appt['status'] . ').'];
+            throw new DomainException('Этот приём нельзя начать (статус: ' . $appt['status'] . ').');
         }
 
-        // Есть ли уже визит?
         $visit = $this->visits->findByAppointmentId($appointmentId);
-        if (!$visit) {
-            $this->visits->create($appointmentId);
-        }
 
-        $this->appointments->updateStatus($appointmentId, 'in_progress');
-        return ['ok' => true];
+        Database::transaction(function () use ($appointmentId, $visit): void {
+            if (!$visit) {
+                $this->visits->create($appointmentId);
+            }
+            $this->appointments->updateStatus($appointmentId, 'in_progress');
+        });
     }
 
-    /** Сохранить протокол (автосохранение и финальное) */
+    /** Сохранить протокол (автосохранение и финальное). @throws DomainException|ForbiddenException */
     public function saveProtocol(
         int $appointmentId,
         int $doctorId,
@@ -79,16 +81,16 @@ class DoctorService
         string $examination,
         string $diagnosis,
         bool $finish = false
-    ): array {
+    ): void {
         $appt = $this->appointments->findByIdWithPatient($appointmentId);
 
         if (!$appt || (int) $appt['doctor_id'] !== $doctorId) {
-            return ['error' => 'Приём не найден.'];
+            throw new ForbiddenException('Приём не найден.');
         }
 
         $visit = $this->visits->findByAppointmentId($appointmentId);
         if (!$visit) {
-            return ['error' => 'Визит не начат.'];
+            throw new DomainException('Визит не начат.');
         }
 
         $this->visits->updateProtocol(
@@ -99,14 +101,15 @@ class DoctorService
         );
 
         if ($finish) {
-            $this->visits->finish((int) $visit['id']);
-            $this->appointments->updateStatus($appointmentId, 'completed');
+            $visitId = (int) $visit['id'];
+            Database::transaction(function () use ($visitId, $appointmentId): void {
+                $this->visits->finish($visitId);
+                $this->appointments->updateStatus($appointmentId, 'completed');
+            });
         }
-
-        return ['ok' => true];
     }
 
-    /** Добавить назначение */
+    /** Добавить назначение. @throws DomainException|ForbiddenException */
     public function addPrescription(
         int $appointmentId,
         int $doctorId,
@@ -114,29 +117,29 @@ class DoctorService
         string $name,
         string $dosage,
         string $notes
-    ): array {
+    ): void {
         $appt = $this->appointments->findByIdWithPatient($appointmentId);
 
         if (!$appt || (int) $appt['doctor_id'] !== $doctorId) {
-            return ['error' => 'Приём не найден.'];
+            throw new ForbiddenException('Приём не найден.');
         }
 
         if ($appt['status'] !== 'in_progress') {
-            return ['error' => 'Назначения можно добавлять только во время активного приёма.'];
+            throw new DomainException('Назначения можно добавлять только во время активного приёма.');
         }
 
         $visit = $this->visits->findByAppointmentId($appointmentId);
         if (!$visit) {
-            return ['error' => 'Визит не начат.'];
+            throw new DomainException('Визит не начат.');
         }
 
         $allowed = ['drug', 'procedure', 'referral'];
         if (!in_array($type, $allowed, true)) {
-            return ['error' => 'Неверный тип назначения.'];
+            throw new DomainException('Неверный тип назначения.');
         }
 
         if (trim($name) === '') {
-            return ['error' => 'Укажите название.'];
+            throw new DomainException('Укажите название.');
         }
 
         $this->visits->addPrescription(
@@ -146,28 +149,25 @@ class DoctorService
             trim($dosage),
             trim($notes)
         );
-
-        return ['ok' => true];
     }
 
-    /** Удалить назначение */
+    /** Удалить назначение. @throws ForbiddenException */
     public function deletePrescription(
         int $prescriptionId,
         int $appointmentId,
         int $doctorId
-    ): array {
+    ): void {
         $appt = $this->appointments->findByIdWithPatient($appointmentId);
 
         if (!$appt || (int) $appt['doctor_id'] !== $doctorId) {
-            return ['error' => 'Доступ запрещён.'];
+            throw new ForbiddenException('Доступ запрещён.');
         }
 
         $visit = $this->visits->findByAppointmentId($appointmentId);
         if (!$visit) {
-            return ['error' => 'Визит не найден.'];
+            throw new DomainException('Визит не найден.');
         }
 
         $this->visits->deletePrescription($prescriptionId, (int) $visit['id']);
-        return ['ok' => true];
     }
 }

@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Logger;
 use App\Core\Session;
 use App\Core\View;
+use App\Exceptions\DomainException;
+use App\Exceptions\ForbiddenException;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\DoctorRepository;
@@ -13,17 +16,22 @@ use App\Services\DoctorService;
 
 class DoctorController extends BaseController
 {
-    private DoctorService $service;
-    private AppointmentRepository $appointments;
-    private VisitRepository $visits;
-    private DoctorRepository $doctorRepo;
+    public function __construct(
+        private DoctorService $service              = new DoctorService(),
+        private AppointmentRepository $appointments = new AppointmentRepository(),
+        private VisitRepository $visits             = new VisitRepository(),
+        private DoctorRepository $doctorRepo        = new DoctorRepository(),
+    ) {}
 
-    public function __construct()
+    private function currentDoctorId(): int
     {
-        $this->service      = new DoctorService();
-        $this->appointments = new AppointmentRepository();
-        $this->visits       = new VisitRepository();
-        $this->doctorRepo   = new DoctorRepository();
+        $userId = (int) Session::get('user_id');
+        $id     = $this->service->getDoctorIdByUserId($userId);
+        if ($id === null) {
+            http_response_code(403);
+            die('Профиль врача не найден. Обратитесь к администратору.');
+        }
+        return $id;
     }
 
     // ── Дашборд ─────────────────────────────────────────────────────────────
@@ -31,15 +39,10 @@ class DoctorController extends BaseController
     public function dashboard(): void
     {
 
+        $doctorId = $this->currentDoctorId();
         $userId   = (int) Session::get('user_id');
-        $doctorId = $this->service->getDoctorIdByUserId($userId);
-
-        if (!$doctorId) {
-            die('Профиль врача не найден. Обратитесь к администратору.');
-        }
-
-        $profile = $this->service->getDoctorProfile($userId);
-        $today   = $this->appointments->getTodayForDoctor($doctorId);
+        $profile  = $this->service->getDoctorProfile($userId);
+        $today    = $this->appointments->getTodayForDoctor($doctorId);
         $recent  = $this->appointments->getRecentForDoctor($doctorId, 10);
         $stats   = $this->appointments->getStatsForDoctor($doctorId);
 
@@ -61,12 +64,11 @@ class DoctorController extends BaseController
     {
 
         $appointmentId = (int) $id;
-        $userId        = (int) Session::get('user_id');
-        $doctorId      = $this->service->getDoctorIdByUserId($userId);
+        $doctorId      = $this->currentDoctorId();
 
-        $appt = $this->appointments->findByIdWithPatient($appointmentId);
+        $appt = $this->appointments->findByIdWithPatient($appointmentId, $doctorId);
 
-        if (!$appt || (int) $appt['doctor_id'] !== $doctorId) {
+        if (!$appt) {
             http_response_code(403);
             die('Доступ запрещён.');
         }
@@ -95,15 +97,22 @@ class DoctorController extends BaseController
         $this->validateCsrf();
 
         $appointmentId = (int) $id;
-        $userId        = (int) Session::get('user_id');
-        $doctorId      = $this->service->getDoctorIdByUserId($userId);
+        $doctorId      = $this->currentDoctorId();
 
-        $result = $this->service->startAppointment($appointmentId, $doctorId);
-
-        if (isset($result['error'])) {
-            Session::setFlash('error', $result['error']);
-        } else {
+        try {
+            $this->service->startAppointment($appointmentId, $doctorId);
+            Logger::get()->info('Appointment started', [
+                'doctor_id'      => $doctorId,
+                'appointment_id' => $appointmentId,
+            ]);
             Session::setFlash('success', 'Приём начат.');
+        } catch (DomainException | ForbiddenException $e) {
+            Logger::get()->warning('Start appointment failed', [
+                'doctor_id'      => $doctorId,
+                'appointment_id' => $appointmentId,
+                'error'          => $e->getMessage(),
+            ]);
+            Session::setFlash('error', $e->getMessage());
         }
 
         AuthMiddleware::redirect('/doctor/appointment/' . $appointmentId);
@@ -117,26 +126,34 @@ class DoctorController extends BaseController
         $this->validateCsrf();
 
         $appointmentId = (int) $id;
-        $userId        = (int) Session::get('user_id');
-        $doctorId      = $this->service->getDoctorIdByUserId($userId);
+        $doctorId      = $this->currentDoctorId();
 
         $finish = isset($_POST['finish']);
 
-        $result = $this->service->saveProtocol(
-            $appointmentId,
-            $doctorId,
-            trim($_POST['complaints']   ?? ''),
-            trim($_POST['examination']  ?? ''),
-            trim($_POST['diagnosis']    ?? ''),
-            $finish
-        );
-
-        if (isset($result['error'])) {
-            Session::setFlash('error', $result['error']);
+        try {
+            $this->service->saveProtocol(
+                $appointmentId,
+                $doctorId,
+                trim($_POST['complaints']   ?? ''),
+                trim($_POST['examination']  ?? ''),
+                trim($_POST['diagnosis']    ?? ''),
+                $finish
+            );
+        } catch (DomainException | ForbiddenException $e) {
+            Logger::get()->warning('Save protocol failed', [
+                'doctor_id'      => $doctorId,
+                'appointment_id' => $appointmentId,
+                'error'          => $e->getMessage(),
+            ]);
+            Session::setFlash('error', $e->getMessage());
             AuthMiddleware::redirect('/doctor/appointment/' . $appointmentId);
         }
 
         if ($finish) {
+            Logger::get()->info('Appointment finished', [
+                'doctor_id'      => $doctorId,
+                'appointment_id' => $appointmentId,
+            ]);
             Session::setFlash('success', 'Приём завершён и сохранён.');
             AuthMiddleware::redirect('/doctor/dashboard');
         }
@@ -153,20 +170,24 @@ class DoctorController extends BaseController
         $this->validateCsrf();
 
         $appointmentId = (int) $id;
-        $userId        = (int) Session::get('user_id');
-        $doctorId      = $this->service->getDoctorIdByUserId($userId);
+        $doctorId      = $this->currentDoctorId();
 
-        $result = $this->service->addPrescription(
-            $appointmentId,
-            $doctorId,
-            $_POST['type']   ?? '',
-            $_POST['name']   ?? '',
-            $_POST['dosage'] ?? '',
-            $_POST['notes']  ?? ''
-        );
-
-        if (isset($result['error'])) {
-            Session::setFlash('error', $result['error']);
+        try {
+            $this->service->addPrescription(
+                $appointmentId,
+                $doctorId,
+                $_POST['type']   ?? '',
+                $_POST['name']   ?? '',
+                $_POST['dosage'] ?? '',
+                $_POST['notes']  ?? ''
+            );
+        } catch (DomainException | ForbiddenException $e) {
+            Logger::get()->warning('Add prescription failed', [
+                'doctor_id'      => $doctorId,
+                'appointment_id' => $appointmentId,
+                'error'          => $e->getMessage(),
+            ]);
+            Session::setFlash('error', $e->getMessage());
         }
 
         AuthMiddleware::redirect('/doctor/appointment/' . $appointmentId);
@@ -179,12 +200,16 @@ class DoctorController extends BaseController
     {
         $this->validateCsrf();
 
-        $appointmentId   = (int) $id;
-        $prescriptionId  = (int) ($_POST['prescription_id'] ?? 0);
-        $userId          = (int) Session::get('user_id');
-        $doctorId        = $this->service->getDoctorIdByUserId($userId);
+        $appointmentId  = (int) $id;
+        $prescriptionId = (int) ($_POST['prescription_id'] ?? 0);
+        $doctorId       = $this->currentDoctorId();
 
-        $this->service->deletePrescription($prescriptionId, $appointmentId, $doctorId);
+        try {
+            $this->service->deletePrescription($prescriptionId, $appointmentId, $doctorId);
+        } catch (DomainException | ForbiddenException $e) {
+            Session::setFlash('error', $e->getMessage());
+        }
+
         AuthMiddleware::redirect('/doctor/appointment/' . $appointmentId);
     }
 
@@ -213,8 +238,7 @@ public function profile(): void
     {
         $this->validateCsrf();
 
-        $userId   = (int) Session::get('user_id');
-        $doctorId = $this->service->getDoctorIdByUserId($userId);
+        $doctorId = $this->currentDoctorId();
 
         $bio      = trim($_POST['bio']       ?? '');
         $photoUrl = trim($_POST['photo_url'] ?? '');

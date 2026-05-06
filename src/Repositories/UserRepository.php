@@ -55,6 +55,22 @@ class UserRepository extends BaseRepository
         );
     }
 
+    public function rehashPassword(int $userId, string $plainPassword): void
+    {
+        $stmt = $this->db->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+        $stmt->execute([password_hash($plainPassword, PASSWORD_DEFAULT), $userId]);
+    }
+
+    public function isDoctorActive(int $userId): bool
+    {
+        $stmt = $this->db->prepare(
+            'SELECT is_active FROM doctors WHERE user_id = ? LIMIT 1'
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch();
+        return $row !== false && (bool)$row['is_active'];
+    }
+
     public function emailExists(string $email): bool
     {
         $stmt = $this->db->prepare(
@@ -76,35 +92,24 @@ class UserRepository extends BaseRepository
         string $phone,
         string $gender,
     ): int {
-        $this->db->beginTransaction();
-
-        try {
-            // 1. Создаём пользователя
+        return \App\Core\Database::transaction(function () use (
+            $email, $password, $fullName, $birthDate, $phone, $gender
+        ): int {
             $stmt = $this->db->prepare(
                 "INSERT INTO users (email, password_hash, role)
                  VALUES (?, ?, 'patient')"
             );
-            $stmt->execute([
-                $email,
-                password_hash($password, PASSWORD_BCRYPT),
-            ]);
-            $userId = (int)$this->db->lastInsertId();
+            $stmt->execute([$email, password_hash($password, PASSWORD_DEFAULT)]);
+            $userId = (int) $this->db->lastInsertId();
 
-            // 2. Создаём профиль пациента
             $stmt = $this->db->prepare(
                 'INSERT INTO patients (user_id, full_name, birth_date, phone, gender)
                  VALUES (?, ?, ?, ?, ?)'
             );
             $stmt->execute([$userId, $fullName, $birthDate, $phone, $gender]);
 
-            $this->db->commit();
             return $userId;
-
-        } catch (\Throwable $e) {
-            $this->db->rollBack();
-            error_log('createPatient error: ' . $e->getMessage());
-            throw $e;
-        }
+        });
     }
 
     public function changePassword(int $userId, string $currentPassword, string $newPassword): bool
@@ -122,7 +127,7 @@ class UserRepository extends BaseRepository
         $stmt = $this->db->prepare(
             "UPDATE users SET password_hash = ? WHERE id = ?"
         );
-        $stmt->execute([password_hash($newPassword, PASSWORD_BCRYPT), $userId]);
+        $stmt->execute([password_hash($newPassword, PASSWORD_DEFAULT), $userId]);
         return true;
     }
 }

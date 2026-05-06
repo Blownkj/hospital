@@ -1,81 +1,73 @@
 <?php
 use App\Core\View;
 require ROOT_PATH . '/views/layout/public_header.php';
+require ROOT_PATH . '/views/partials/icon.php';
 
-$categoryIcons = [
-    'Подготовка к обследованию' => '🔬',
-    'Нормы и показатели'        => '📊',
-    'Когда к врачу'             => '🩺',
-    'Первая помощь'             => '🚑',
-    'Профилактика'              => '🛡️',
-    'Общее'                     => '📋',
+$catIconMap = [
+    'Подготовка к обследованию' => 'microscope',
+    'Нормы и показатели'        => 'activity',
+    'Когда к врачу'             => 'stethoscope',
+    'Первая помощь'             => 'alert-triangle',
+    'Профилактика'              => 'shield-check',
+    'Общее'                     => 'clipboard-list',
 ];
 ?>
 
 <div class="page-header">
     <h1 class="page-title">Статьи о здоровье</h1>
-    <span style="color:#888;font-size:14px"><?= count($articles) ?> материалов</span>
+    <span class="page-subtitle"><?= count($articles) ?> материалов</span>
 </div>
 
 <!-- Фильтр по категориям -->
-<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px">
+<div class="filter-chips">
     <a href="<?= BASE_URL ?>/articles"
-       class="btn btn-sm"
-       style="<?= $filter === '' ? 'background:#4a90e2;color:#fff' : 'background:#f0f4ff;color:#4a90e2' ?>">
+       class="filter-chip <?= $filter === '' ? 'filter-chip--active' : '' ?>">
         Все
     </a>
     <?php foreach ($categories as $cat): ?>
         <a href="<?= BASE_URL ?>/articles?category=<?= urlencode($cat) ?>"
-           class="btn btn-sm"
-           style="<?= $filter === $cat ? 'background:#4a90e2;color:#fff' : 'background:#f0f4ff;color:#4a90e2' ?>">
-            <?= ($categoryIcons[$cat] ?? '📋') . ' ' . View::e($cat) ?>
+           class="filter-chip <?= $filter === $cat ? 'filter-chip--active' : '' ?>">
+            <?php icon($catIconMap[$cat] ?? 'clipboard-list', 14) ?>
+            <?= View::e($cat) ?>
         </a>
     <?php endforeach; ?>
 </div>
 
 <!-- Сетка статей -->
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;margin-bottom:48px">
+<div class="articles-grid">
     <?php foreach ($articles as $article): ?>
-        <a href="<?= BASE_URL ?>/articles/<?= View::e($article['slug']) ?>"
-           style="text-decoration:none;color:inherit;display:flex;flex-direction:column"
-           class="card">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                <span style="font-size:20px"><?= $categoryIcons[$article['category']] ?? '📋' ?></span>
-                <span style="font-size:12px;color:#4a90e2;font-weight:500;background:#eef3fd;padding:3px 10px;border-radius:20px">
-                    <?= View::e($article['category']) ?>
-                </span>
+        <a href="<?= BASE_URL ?>/articles/<?= View::e($article['slug']) ?>" class="article-card">
+            <div class="article-card__cat">
+                <?php icon($catIconMap[$article['category']] ?? 'clipboard-list', 12) ?>
+                <?= View::e($article['category']) ?>
             </div>
-            <h2 style="font-size:16px;font-weight:600;margin-bottom:8px;line-height:1.4">
-                <?= View::e($article['title']) ?>
-            </h2>
-            <p style="font-size:13px;color:#666;line-height:1.6;flex:1">
-                <?= View::e($article['excerpt']) ?>
-            </p>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:14px;font-size:12px;color:#aaa">
-                <span>🕐 <?= (int)$article['read_time'] ?> мин чтения</span>
-                <span style="margin-left:auto;color:#4a90e2;font-weight:500">Читать →</span>
+            <h2 class="article-card__title"><?= View::e($article['title']) ?></h2>
+            <p class="article-card__excerpt"><?= View::e($article['excerpt']) ?></p>
+            <div class="article-card__meta">
+                <?php icon('clock', 12) ?>
+                <?= (int)$article['read_time'] ?> мин чтения
+                <span class="article-card__read-more">Читать →</span>
             </div>
         </a>
     <?php endforeach; ?>
 
     <?php if (empty($articles)): ?>
-        <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#aaa">
-            Статей в этой категории нет.
+        <div class="grid-full">
+            <?php
+            $emptyMessage = 'Статей в этой категории нет';
+            include ROOT_PATH . '/views/partials/empty-state.php';
+            ?>
         </div>
     <?php endif; ?>
 </div>
 
 <!-- CTA -->
-<div style="background:linear-gradient(135deg,#4a90e2,#357abd);border-radius:16px;padding:40px;text-align:center;color:#fff;margin-bottom:0">
-    <h2 style="font-size:22px;font-weight:700;margin-bottom:10px">Есть вопросы? Запишитесь на консультацию</h2>
-    <p style="opacity:.85;margin-bottom:24px">Наши специалисты ответят на все вопросы и подберут подходящее лечение</p>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <a href="<?= BASE_URL ?>/register" style="background:#fff;color:#4a90e2;font-weight:600;padding:12px 28px;border-radius:10px;text-decoration:none">
-            Записаться на приём
-        </a>
-        <a href="<?= BASE_URL ?>/doctors" style="border:2px solid rgba(255,255,255,.6);color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none">
-            Наши врачи
-        </a>
+<div class="cta-banner">
+    <p class="cta-banner__title">Есть вопросы? Запишитесь на консультацию</p>
+    <p class="cta-banner__lead">Наши специалисты ответят на все вопросы и подберут подходящее лечение</p>
+    <div class="cta-banner__actions">
+        <a href="<?= BASE_URL ?>/register" class="btn btn--white btn--lg">Записаться на приём</a>
+        <a href="<?= BASE_URL ?>/doctors"  class="btn btn--outline-white btn--lg">Наши врачи</a>
     </div>
 </div>
 

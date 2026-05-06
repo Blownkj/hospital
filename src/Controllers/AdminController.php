@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Logger;
+use App\Core\Paginator;
 use App\Core\Session;
 use App\Core\View;
-use App\Core\Paginator;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\AdminRepository;
 use App\Repositories\AppointmentRepository;
@@ -14,16 +15,11 @@ use App\Repositories\UserRepository;
 
 class AdminController extends BaseController
 {
-    private AdminRepository $repo;
-    private AppointmentRepository $appointments;
-    private UserRepository $users;
-
-    public function __construct()
-    {
-        $this->repo         = new AdminRepository();
-        $this->appointments = new AppointmentRepository();
-        $this->users        = new UserRepository();
-    }
+    public function __construct(
+        private AdminRepository       $repo         = new AdminRepository(),
+        private AppointmentRepository $appointments = new AppointmentRepository(),
+        private UserRepository        $users        = new UserRepository(),
+    ) {}
 
     // ── Дашборд ──────────────────────────────────────────────────────────────
 
@@ -79,6 +75,10 @@ class AdminController extends BaseController
         $this->validateCsrf();
 
         $this->repo->updateAppointmentStatus((int) $id, 'confirmed');
+        Logger::get()->info('Admin confirmed appointment', [
+            'admin_id'       => Session::get('user_id'),
+            'appointment_id' => (int) $id,
+        ]);
         Session::setFlash('success', 'Запись подтверждена.');
         AuthMiddleware::redirect('/admin/appointments');
     }
@@ -88,6 +88,10 @@ class AdminController extends BaseController
         $this->validateCsrf();
 
         $this->repo->updateAppointmentStatus((int) $id, 'cancelled');
+        Logger::get()->info('Admin cancelled appointment', [
+            'admin_id'       => Session::get('user_id'),
+            'appointment_id' => (int) $id,
+        ]);
         Session::setFlash('success', 'Запись отменена.');
         AuthMiddleware::redirect('/admin/appointments');
     }
@@ -164,14 +168,19 @@ class AdminController extends BaseController
 
     public function reviews(): void
     {
+        $page    = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 20;
 
-        $pending  = $this->repo->getPendingReviews();
-        $approved = $this->repo->getApprovedReviews();
+        $pending   = $this->repo->getPendingReviews();
+        $total     = $this->repo->countApprovedReviews();
+        $paginator = new Paginator($total, $perPage, $page);
+        $approved  = $this->repo->getApprovedReviewsPaginated($perPage, $paginator->offset);
 
         View::render('admin/reviews', [
             'pageTitle' => 'Модерация отзывов',
             'pending'   => $pending,
             'approved'  => $approved,
+            'paginator' => $paginator,
             'csrf'      => Session::generateCsrfToken(),
             'flash'     => Session::getFlash('success'),
             'error'     => Session::getFlash('error'),

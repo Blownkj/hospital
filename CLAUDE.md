@@ -7,7 +7,7 @@ Optimize for correctness and low-token work: read only the files needed for the 
   - Loads env via `vlucas/phpdotenv`
   - Defines `ROOT_PATH` (repo root) and `BASE_URL` (from `APP_URL`)
   - Starts session via `App\Core\Session::start()`
-  - Registers routes on `App\Core\Router` and calls `$router->dispatch()`
+  - Registers routes on `App\Core\Router` with middleware chain and calls `$router->dispatch()`
 - **Rewrite**: `public/.htaccess` routes all non-files/non-directories to `index.php`
 
 ## Strict rules (must follow)
@@ -37,34 +37,41 @@ Do not jump randomly across files.
 - `public/`: web root
   - `index.php` routes + bootstrap
   - `css/`, `js/`: assets
+  - `images/`: image files (icons, photos, etc.)
 - `src/`: application code (autoload `App\\` → `src/`)
-  - `Core/`: infrastructure (`Router`, `Database`, `Session`, `View`)
-  - `Controllers/`: HTTP controllers (one per area)
+  - `Core/`: infrastructure (`Router`, `Database`, `Session`, `View`, `Logger`, `Paginator`, `Validator`)
+  - `Controllers/`: HTTP controllers (one per area) — all extend `BaseController`
   - `Services/`: business logic
-  - `Repositories/`: PDO queries + persistence
-  - `Models/`: small DTO-like objects (e.g. `User`)
-  - `Middleware/`: access control helpers (role/auth)
+  - `Repositories/`: PDO queries + persistence — all extend `BaseRepository`
+  - `Models/`: DTOs (e.g. `DoctorProfile`, `User`)
+  - `Middleware/`: access control helpers (auth, CSRF, rate-limit, owner checks)
+  - `Enums/`: `Role`, `AppointmentStatus`, `PrescriptionType`, `ReviewState`
 - `views/`: PHP templates
   - `layout/`: headers/footers
   - `auth/`, `public/`, `patient/`, `doctor/`, `admin/`: area-specific pages
   - `errors/404.php`, `errors/500.php`
+  - `partials/`: reusable components (flash, doctor-card, status-badge, empty-state, appointment-row, icon)
 - `database/`:
-  - `migrations.sql`: schema
+  - `migrations.sql`: schema (CREATE + ALTER statements)
   - `seeds.php`: dev seed script (writes sample data)
+- `logs/`: rotating daily log files (`app-YYYY-MM-DD.log`), managed by `Logger`
 - `vendor/`: Composer dependencies (do not read unless explicitly asked)
 
 ## Core mechanics (important conventions)
-### Routing
+
+### Routing + Middleware
 Implemented in `src/Core/router.php`.
 - Supports `GET` and `POST`.
-- Path params: `/doctors/{id}` become regex `([^/]+)`; param names are not used, only order matters.
-- Base path stripping: dispatch strips `dirname($_SERVER['SCRIPT_NAME'])` from the request URI (XAMPP subfolder deploy like `/hospital/public`).
+- Path params: `/doctors/{id}` extracted as named args (e.g. `$controller->method(id: '42')`).
+- Middleware chain: `Router::group()` groups routes with prefix and/or middleware closures. `dispatch()` executes middleware before calling controller.
+- Global middleware: `Router::use()` registers CSRF, rate-limiting, etc.
 - If no route matches: `404` + `View::render('errors/404')`.
 
 ### View rendering + escaping
 Implemented in `src/Core/view.php`.
 - `View::render('auth/login', ['csrf' => ...])` loads `views/auth/login.php` and `extract()` variables.
 - Always escape untrusted output using `View::e(...)` in templates.
+- Icon helper: `icon($name, $size, $class)` renders Lucide SVG (from `views/partials/icon.php`).
 
 ### Database access
 Implemented in `src/Core/database.php`.
@@ -77,20 +84,34 @@ Implemented in `src/Core/session.php`.
 - Session cookies: `httponly=true`, `samesite=Strict`. `secure=false` unless HTTPS.
 - CSRF:
   - Generate: `Session::generateCsrfToken()`
-  - Validate: `Session::validateCsrfToken($_POST['csrf_token'] ?? '')`
+  - Validate: `Session::validateCsrfToken($_POST['csrf_token'] ?? '')` (also via `CsrfMiddleware`)
 - Flash messages:
   - Set: `Session::setFlash('error', '...')`
   - Read-once: `Session::getFlash('error')`
 
 ### Auth + roles
-- Login state is stored in session keys:
-  - `user_id`, `user_role`, `user_email`
+- Login state is stored in session keys: `user_id`, `user_role`, `user_email`
 - Roles: `patient`, `doctor`, `admin` (see `database/migrations.sql` → `users.role` enum)
-- Access control helpers in `src/Middleware/AuthMiddleware.php`:
-  - `requireAuth()` → redirect to `/login`
-  - `requireRole('admin'|'doctor'|'patient')` → redirect to `/`
-  - `requireGuest()` → if logged in, redirect to role dashboard
-  - `redirectToDashboard()` maps role → `/patient/dashboard`, `/doctor/dashboard`, `/admin/dashboard`
+- Middleware in `src/Middleware/`:
+  - Role-based groups: `/patient/*`, `/doctor/*`, `/admin/*` have middleware that enforce role
+  - Access control helpers: `requireAuth()`, `requireRole()`, `requireGuest()`, `redirectToDashboard()`
+  - Owner checks: `OwnerMiddleware` for patient visit printing
+
+### Logging
+Implemented in `src/Core/Logger.php`.
+- Dependency-free rotating daily file logger (30-day retention).
+- PSR-3-like interface: `Logger::get()->info('msg', ['key' => $value])`.
+- Integrated: AuthService logs login attempts, successes, registration, logouts.
+
+### Pagination
+Implemented in `src/Core/Paginator.php`.
+- `new Paginator(total, perPage, currentPage)` → `$paginator->pages()`, `hasNext()`, `hasPrev()`, `offset()`.
+- Used in admin appointments view.
+
+### Validation
+Implemented in `src/Core/Validator.php`.
+- Static methods: `email($val)`, `password($val)` (min 8), `phone($val)`, `dateInFuture($val)`, `time($val)`, `nonEmpty($val)`.
+- Returns `true` on success, throws `Exception` on failure.
 
 ## Routes (source of truth = `public/index.php`)
 ### Public
@@ -103,8 +124,8 @@ Implemented in `src/Core/session.php`.
 - `GET /faq`
 
 ### Auth
-- `GET /login`, `POST /login`
-- `GET /register`, `POST /register`
+- `GET /login`, `POST /login` (rate-limited: 5/15min)
+- `GET /register`, `POST /register` (rate-limited: 5/1h)
 - `GET /logout`
 
 ### Patient
@@ -118,7 +139,7 @@ Implemented in `src/Core/session.php`.
 - `POST /patient/profile/password`
 - `GET /patient/reviews`
 - `POST /patient/reviews/submit`
-- `GET /patient/visit/{visitId}/print`
+- `GET /patient/visit/{visitId}/print` (owner-checked)
 
 ### Doctor
 - `GET /doctor/dashboard`
@@ -131,7 +152,7 @@ Implemented in `src/Core/session.php`.
 
 ### Admin
 - `GET /admin/dashboard`
-- `GET /admin/appointments`
+- `GET /admin/appointments` (paginated: 25/page)
 - `POST /admin/appointment/{id}/confirm`
 - `POST /admin/appointment/{id}/cancel`
 - `POST /admin/appointment/{id}/reschedule`
@@ -160,6 +181,8 @@ Source of truth: `database/migrations.sql`.
 - `visits` is 1:1 to `appointments` when started by doctor
 - `prescriptions` belong to a `visit`
 - `reviews` belong to a completed appointment (unique per appointment)
+- `articles` (is_published, author_id, image_url columns added)
+- Composite indices on appointments/reviews for query optimization
 
 ## Dev database seeding
 `database/seeds.php`:
@@ -177,9 +200,14 @@ Source of truth: `database/migrations.sql`.
 ## Coding standards (keep diffs consistent)
 - PHP files use `declare(strict_types=1);`
 - Prefer typed properties and return types.
+- Controllers extend `BaseController` (validateCsrf, redirectWith, redirectBack, input, etc.).
+- Repositories extend `BaseRepository` (findById, findAll, count, delete, transaction, etc.).
 - Prefer repository methods for DB operations; do not inline SQL in controllers.
 - Validate CSRF for all state-changing POST actions.
 - Never output raw DB/user data in views without `View::e`.
+- Use enums (`Role`, `AppointmentStatus`, etc.) instead of magic strings.
+- CSS: BEM naming (`.block`, `.block__element`, `.block--modifier`), utilities `.u-*`.
+- Icons: Use `icon()` function, never emoji in views.
 
 ## Token-efficient workflow (strict)
 - Never scan `vendor/` or large/binary assets.

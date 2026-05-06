@@ -1,108 +1,126 @@
 <?php
 use App\Core\View;
 require ROOT_PATH . '/views/layout/public_header.php';
-$typeLabels = ['drug' => '💊 Препарат', 'procedure' => '🔧 Процедура', 'referral' => '📄 Направление'];
+require ROOT_PATH . '/views/partials/icon.php';
+
+$typeLabels = [
+    'drug'      => 'Препарат',
+    'procedure' => 'Процедура',
+    'referral'  => 'Направление',
+];
 ?>
 
 <a href="<?= BASE_URL ?>/patient/dashboard" class="back-link">← Личный кабинет</a>
 
 <?php if ($flash): ?>
-    <div class="alert alert-success">✅ <?= View::e($flash) ?></div>
+    <div class="alert alert--success" role="alert">
+        <span class="alert__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+            </svg>
+        </span>
+        <span class="alert__body"><?= View::e($flash) ?></span>
+    </div>
 <?php endif; ?>
 
 <div class="page-header">
     <div>
         <h1 class="page-title">Медицинская карта</h1>
-        <p class="text-muted"><?= View::e($patient['full_name']) ?></p>
+        <p class="u-text-muted u-text-sm"><?= View::e($patient['full_name']) ?></p>
     </div>
 </div>
 
 <!-- Хронические заболевания -->
 <?php if ($patient['chronic_diseases']): ?>
-<div class="alert alert-warning" style="margin-bottom:20px">
-    <strong>📋 Хронические заболевания:</strong><br>
-    <?= View::e($patient['chronic_diseases']) ?>
+<div class="alert alert--warning u-mb-5" role="alert">
+    <span class="alert__icon"><?php icon('clipboard-list', 18) ?></span>
+    <span class="alert__body">
+        <strong>Хронические заболевания:</strong><br>
+        <?= View::e($patient['chronic_diseases']) ?>
+    </span>
 </div>
 <?php endif; ?>
 
 <!-- История визитов -->
 <?php if (empty($visits)): ?>
-<div class="card" style="text-align:center;padding:48px">
-    <div style="font-size:40px;margin-bottom:12px">🗂</div>
-    <p class="text-muted">Визитов пока нет.</p>
-    <a href="<?= BASE_URL ?>/patient/book" class="btn btn-primary" style="display:inline-block;margin-top:12px">
-        Записаться к врачу
-    </a>
-</div>
+    <?php
+    $emptyMessage = 'Визитов пока нет';
+    $emptyLinkUrl = BASE_URL . '/patient/book';
+    $emptyLinkText = 'Записаться к врачу';
+    include ROOT_PATH . '/views/partials/empty-state.php';
+    ?>
 <?php else: ?>
 
-<p class="text-muted" style="margin-bottom:16px;font-size:13px">
+<p class="u-text-muted u-text-sm u-mb-4">
     Всего визитов: <?= count($visits) ?>
 </p>
 
 <?php foreach ($visits as $v): ?>
-<div class="card" style="margin-bottom:16px">
-    <!-- Шапка визита -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-        <div>
-            <div style="font-size:15px;font-weight:600">
-                <?= View::e($v['doctor_name']) ?>
-                <span style="color:#4a90e2;font-weight:400;font-size:13px"> — <?= View::e($v['specialization']) ?></span>
+<div class="card u-mb-4">
+    <div class="card__body">
+        <div class="visit-header">
+            <div>
+                <div class="visit-doctor__name">
+                    <?= View::e($v['doctor_name']) ?>
+                    <span class="visit-doctor__spec">— <?= View::e($v['specialization']) ?></span>
+                </div>
+                <div class="visit-time">
+                    <?php icon('calendar', 13) ?>
+                    <?= date('d.m.Y', strtotime($v['scheduled_at'])) ?>
+                    <?php icon('clock', 13) ?>
+                    <?= date('H:i', strtotime($v['started_at'])) ?>
+                    <?php if ($v['ended_at']): ?>
+                        — <?= date('H:i', strtotime($v['ended_at'])) ?>
+                    <?php endif; ?>
+                </div>
             </div>
-            <div class="text-muted" style="font-size:13px;margin-top:3px">
-                📅 <?= date('d.m.Y', strtotime($v['scheduled_at'])) ?>
-                🕐 <?= date('H:i', strtotime($v['started_at'])) ?>
-                <?php if ($v['ended_at']): ?>
-                — <?= date('H:i', strtotime($v['ended_at'])) ?>
-                <?php endif; ?>
+            <span class="badge badge--success">
+                <span class="badge__dot" aria-hidden="true"></span>
+                Завершён
+            </span>
+        </div>
+
+        <!-- Протокол -->
+        <div class="protocol-grid">
+            <div>
+                <div class="protocol-label">Жалобы</div>
+                <div><?= $v['complaints'] ? View::e($v['complaints']) : '<span class="u-text-muted">—</span>' ?></div>
+            </div>
+            <div>
+                <div class="protocol-label">Осмотр</div>
+                <div><?= $v['examination'] ? View::e($v['examination']) : '<span class="u-text-muted">—</span>' ?></div>
+            </div>
+            <div>
+                <div class="protocol-label">Диагноз</div>
+                <div class="u-fw-medium"><?= $v['diagnosis'] ? View::e($v['diagnosis']) : '<span class="u-text-muted">—</span>' ?></div>
             </div>
         </div>
-        <span class="badge badge-completed">✅ Завершён</span>
-    </div>
 
-    <!-- Протокол -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:13px;margin-bottom:<?= empty($v['prescriptions']) ? '0' : '14px' ?>">
-        <div>
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#999;margin-bottom:5px">Жалобы</div>
-            <div><?= $v['complaints'] ? View::e($v['complaints']) : '<span class="text-muted">—</span>' ?></div>
-        </div>
-        <div>
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#999;margin-bottom:5px">Осмотр</div>
-            <div><?= $v['examination'] ? View::e($v['examination']) : '<span class="text-muted">—</span>' ?></div>
-        </div>
-        <div>
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#999;margin-bottom:5px">Диагноз</div>
-            <div style="font-weight:500"><?= $v['diagnosis'] ? View::e($v['diagnosis']) : '<span class="text-muted">—</span>' ?></div>
-        </div>
-    </div>
-
-    <!-- Назначения -->
-    <?php if (!empty($v['prescriptions'])): ?>
-    <div style="border-top:1px solid #f0f0f5;padding-top:12px">
-        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#999;margin-bottom:8px">
-            Назначения
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <!-- Назначения -->
+        <?php if (!empty($v['prescriptions'])): ?>
+        <div class="rx-list">
             <?php foreach ($v['prescriptions'] as $pr): ?>
-            <div style="background:#f7f8fa;border:1px solid #e8e8f0;border-radius:8px;padding:7px 12px;font-size:13px">
-                <span style="color:#888;margin-right:4px"><?= $typeLabels[$pr['type']] ?? $pr['type'] ?></span>
-                <strong><?= View::e($pr['name']) ?></strong>
+            <div class="rx-tag">
+                <span class="rx-tag__type"><?= View::e($typeLabels[$pr['type']] ?? $pr['type']) ?></span>
+                <span class="rx-tag__name"><?= View::e($pr['name']) ?></span>
                 <?php if ($pr['dosage']): ?>
-                    <span class="text-muted"> — <?= View::e($pr['dosage']) ?></span>
+                    <span class="rx-tag__dose"> — <?= View::e($pr['dosage']) ?></span>
                 <?php endif; ?>
                 <?php if ($pr['notes']): ?>
-                    <div class="text-muted" style="font-size:12px;margin-top:2px"><?= View::e($pr['notes']) ?></div>
+                    <span class="rx-tag__note"><?= View::e($pr['notes']) ?></span>
                 <?php endif; ?>
             </div>
-            <a href="<?= BASE_URL ?>/patient/visit/<?= (int)$v['visit_id'] ?>/print"
-                target="_blank" class="btn btn-secondary"
-                style="font-size:12px;padding:6px 14px;margin-top:10px;display:inline-block">
-                    🖨 Распечатать назначения
-            </a>
             <?php endforeach; ?>
         </div>
+        <div class="u-mt-4">
+            <a href="<?= BASE_URL ?>/patient/visit/<?= (int)$v['visit_id'] ?>/print"
+               target="_blank" class="btn btn--secondary btn--sm">
+                <?php icon('printer', 14) ?> Распечатать назначения
+            </a>
+        </div>
+        <?php endif; ?>
     </div>
-    <?php endif; ?>
 </div>
 <?php endforeach; ?>
 <?php endif; ?>

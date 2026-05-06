@@ -14,6 +14,24 @@ class Database
     private function __construct() {}
     private function __clone() {}
 
+    /**
+     * Executes $callback inside a DB transaction.
+     * On exception: rollBack then rethrow. Returns callback result.
+     */
+    public static function transaction(callable $callback): mixed
+    {
+        $pdo = self::getInstance();
+        $pdo->beginTransaction();
+        try {
+            $result = $callback($pdo);
+            $pdo->commit();
+            return $result;
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
     public static function getInstance(): PDO
     {
         if (self::$instance === null) {

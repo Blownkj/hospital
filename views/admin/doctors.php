@@ -1,6 +1,7 @@
 <?php
 use App\Core\View;
 require ROOT_PATH . '/views/layout/public_header.php';
+require ROOT_PATH . '/views/partials/icon.php';
 
 $specs  = $specs  ?? [];
 $query  = $query  ?? '';
@@ -13,107 +14,110 @@ $doctors = $doctors ?? [];
 <?php include ROOT_PATH . '/views/partials/flash.php'; ?>
 
 <div class="page-header">
-    <h1 class="page-title">Врачи</h1>
-    <span class="text-muted" style="font-size:14px">
-        Найдено: <?= count($doctors) ?>
-    </span>
-    <div style="margin-left:auto">
-        <a class="btn btn-primary btn-sm" href="<?= BASE_URL ?>/admin/doctors/create">＋ Добавить врача</a>
+    <div>
+        <h1 class="page-title">Врачи</h1>
+        <span class="page-subtitle">Найдено: <?= count($doctors) ?></span>
     </div>
+    <a class="btn btn--primary btn--sm" href="<?= BASE_URL ?>/admin/doctors/create">
+        + Добавить врача
+    </a>
 </div>
 
 <!-- Поиск и фильтр -->
-<form method="GET" action="<?= BASE_URL ?>/admin/doctors" style="margin-bottom:18px">
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <input
-            type="text"
-            name="q"
-            class="form-control"
-            placeholder="Поиск по имени, email или специализации..."
-            value="<?= View::e($query) ?>"
-            style="flex:1;min-width:220px"
-        >
-        <select name="spec" class="form-control" style="width:220px">
-            <option value="0">Все специализации</option>
-            <?php foreach ($specs as $spec): ?>
-                <option value="<?= (int)$spec['id'] ?>"
-                    <?= (int)$spec['id'] === $specId ? 'selected' : '' ?>>
-                    <?= View::e($spec['name']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-        <button type="submit" class="btn btn-primary">Найти</button>
-        <?php if ($query || $specId): ?>
-            <a href="<?= BASE_URL ?>/admin/doctors" class="btn" style="border:1px solid #dde0e8">
-                Сбросить
-            </a>
-        <?php endif; ?>
+<div class="card u-mb-4">
+    <div class="card__body">
+        <form method="GET" action="<?= BASE_URL ?>/admin/doctors" class="form-row">
+            <input class="form__control u-flex-1 search-input" type="text" name="q"
+                   placeholder="Поиск по имени, email или специализации..."
+                   value="<?= View::e($query) ?>">
+            <select class="form__control search-spec" name="spec">
+                <option value="0">Все специализации</option>
+                <?php foreach ($specs as $spec): ?>
+                    <option value="<?= (int)$spec['id'] ?>"
+                        <?= (int)$spec['id'] === $specId ? 'selected' : '' ?>>
+                        <?= View::e($spec['name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" class="btn btn--primary btn--sm">
+                <?php icon('search', 14) ?> Найти
+            </button>
+            <?php if ($query || $specId): ?>
+                <a href="<?= BASE_URL ?>/admin/doctors" class="btn btn--ghost btn--sm">Сбросить</a>
+            <?php endif; ?>
+        </form>
     </div>
-</form>
+</div>
 
 <!-- Результаты -->
 <?php if (empty($doctors)): ?>
     <?php
-    $emptyIcon    = '🔍';
     $emptyMessage = 'Врачи не найдены';
     $emptyLinkUrl = BASE_URL . '/admin/doctors';
     $emptyLinkText = 'Сбросить фильтр';
     include ROOT_PATH . '/views/partials/empty-state.php';
     ?>
 <?php else: ?>
-    <div class="card" style="padding:0;overflow:hidden">
-        <table class="table">
-            <thead>
-            <tr>
-                <th>ФИО</th>
-                <th>Email</th>
-                <th>Специализация</th>
-                <th>Статус</th>
-                <th style="text-align:right;width:260px">Действия</th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($doctors as $d): ?>
-                <?php
+    <div class="card card--flush">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>ФИО</th>
+                    <th>Email</th>
+                    <th>Специализация</th>
+                    <th>Статус</th>
+                    <th class="td-actions td-w260">Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($doctors as $d):
                     $isActive = (($d['role'] ?? '') === 'doctor');
                 ?>
-                <tr>
-                    <td>
-                        <div style="font-weight:600"><?= View::e($d['full_name'] ?? '') ?></div>
-                        <?php if (!empty($d['bio'] ?? '')): ?>
-                            <div class="muted-sm" style="margin-top:2px">
-                                <?= View::e(mb_strimwidth((string)($d['bio'] ?? ''), 0, 120, '...')) ?>
-                            </div>
-                        <?php endif; ?>
-                    </td>
-                    <td><?= View::e($d['email'] ?? '—') ?></td>
-                    <td><?= View::e($d['specialization'] ?? '—') ?></td>
-                    <td>
-                        <?php if ($isActive): ?>
-                            <span class="badge" style="background:#e8fff1;color:#0b7a3b;border:1px solid #baf2cf;padding:2px 8px;border-radius:999px;font-size:12px">Активен</span>
-                        <?php else: ?>
-                            <span class="badge" style="background:#fff1f1;color:#a30f0f;border:1px solid #ffd1d1;padding:2px 8px;border-radius:999px;font-size:12px">Отключён</span>
-                        <?php endif; ?>
-                    </td>
-                    <td style="text-align:right;white-space:nowrap">
-                        <a class="btn btn-sm" style="border:1px solid #dde0e8" href="<?= BASE_URL ?>/admin/doctors/<?= (int)$d['id'] ?>/edit">Редактировать</a>
-
-                        <?php if ($isActive): ?>
-                            <form method="POST" action="<?= BASE_URL ?>/admin/doctors/<?= (int)$d['id'] ?>/deactivate" style="display:inline-block;margin-left:6px">
-                                <input type="hidden" name="csrf_token" value="<?= View::e($csrf ?? '') ?>">
-                                <button class="btn btn-sm" style="border:1px solid #ffd1d1;color:#a30f0f;background:#fff" type="submit">Деактивировать</button>
-                            </form>
-                        <?php else: ?>
-                            <form method="POST" action="<?= BASE_URL ?>/admin/doctors/<?= (int)$d['id'] ?>/activate" style="display:inline-block;margin-left:6px">
-                                <input type="hidden" name="csrf_token" value="<?= View::e($csrf ?? '') ?>">
-                                <button class="btn btn-primary btn-sm" type="submit">Активировать</button>
-                            </form>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+                    <tr>
+                        <td>
+                            <div class="u-fw-semibold"><?= View::e($d['full_name'] ?? '') ?></div>
+                            <?php if (!empty($d['bio'] ?? '')): ?>
+                                <div class="u-text-xs u-text-muted u-mt-2">
+                                    <?= View::e(mb_strimwidth((string)($d['bio'] ?? ''), 0, 120, '...')) ?>
+                                </div>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= View::e($d['email'] ?? '—') ?></td>
+                        <td><?= View::e($d['specialization'] ?? '—') ?></td>
+                        <td>
+                            <?php if ($isActive): ?>
+                                <span class="badge badge--success">Активен</span>
+                            <?php else: ?>
+                                <span class="badge badge--danger">Отключён</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="td-actions">
+                            <a class="btn btn--ghost btn--sm"
+                               href="<?= BASE_URL ?>/admin/doctors/<?= (int)$d['id'] ?>/edit">
+                                <?php icon('settings', 13) ?> Редактировать
+                            </a>
+                            <?php if ($isActive): ?>
+                                <form method="POST"
+                                      action="<?= BASE_URL ?>/admin/doctors/<?= (int)$d['id'] ?>/deactivate"
+                                      class="u-inline-block u-ms-1">
+                                    <input type="hidden" name="csrf_token" value="<?= View::e($csrf ?? '') ?>">
+                                    <button class="btn btn--danger btn--sm" type="submit">Деактивировать</button>
+                                </form>
+                            <?php else: ?>
+                                <form method="POST"
+                                      action="<?= BASE_URL ?>/admin/doctors/<?= (int)$d['id'] ?>/activate"
+                                      class="u-inline-block u-ms-1">
+                                    <input type="hidden" name="csrf_token" value="<?= View::e($csrf ?? '') ?>">
+                                    <button class="btn btn--primary btn--sm" type="submit">Активировать</button>
+                                </form>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 <?php endif; ?>
 

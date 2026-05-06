@@ -1,12 +1,28 @@
 <?php
 declare(strict_types=1);
 
-ini_set('display_errors', '1');
-error_reporting(E_ALL);
-
 define('ROOT_PATH', dirname(__DIR__));
 
 require_once ROOT_PATH . '/vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(ROOT_PATH);
+$dotenv->load();
+
+// Управление ошибками в зависимости от окружения — должно быть первым после загрузки env
+if (($_ENV['APP_ENV'] ?? 'development') === 'production') {
+    error_reporting(0);
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+} else {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
+// HTTP security headers
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Content-Security-Policy: default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'");
 
 use App\Core\Router;
 use App\Core\Session;
@@ -20,8 +36,6 @@ use App\Middleware\CsrfMiddleware;
 use App\Middleware\RateLimitMiddleware;
 use App\Middleware\OwnerMiddleware;
 
-$dotenv = Dotenv\Dotenv::createImmutable(ROOT_PATH);
-$dotenv->load();
 define('BASE_URL', rtrim($_ENV['APP_URL'], '/'));
 
 Session::start();
@@ -56,7 +70,7 @@ $router->group('', [$mwGuest], function (Router $r): void {
     $r->get('/register', [AuthController::class, 'showRegister']);
     $r->post('/register',[AuthController::class, 'doRegister'], [RateLimitMiddleware::make('register', 5, 3600)]);
 });
-$router->get('/logout', [AuthController::class, 'logout']);
+$router->post('/logout', [AuthController::class, 'logout']);
 
 // ── Пациент ───────────────────────────────────────────────────────────────
 $router->group('/patient', [$mwPatient], function (Router $r): void {
@@ -119,23 +133,13 @@ $router->group('/admin', [$mwAdmin], function (Router $r): void {
     $r->post('/lab-tests/{id}/delete',       [AdminController::class, 'deleteLabTest']);
 });
 
-// Управление ошибками в зависимости от окружения
-if ($_ENV['APP_ENV'] === 'production') {
-    error_reporting(0);
-    ini_set('display_errors', '0');
-    ini_set('log_errors', '1');
-} else {
-    error_reporting(E_ALL);
-    ini_set('display_errors', '1');
-}
-
 // ── Запуск ────────────────────────────────────────────────────────────────
 try {
     $router->dispatch();
 } catch (\Throwable $e) {
     error_log($e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
 
-    if ($_ENV['APP_ENV'] !== 'production') {
+    if (($_ENV['APP_ENV'] ?? 'development') !== 'production') {
         throw $e; // В разработке — показываем полную ошибку
     }
 

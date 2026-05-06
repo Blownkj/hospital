@@ -10,12 +10,9 @@ use App\Services\AuthService;
 
 class AuthController extends BaseController
 {
-    private AuthService $auth;
-
-    public function __construct()
-    {
-        $this->auth = new AuthService();
-    }
+    public function __construct(
+        private AuthService $auth = new AuthService(),
+    ) {}
 
     // GET / — главная страница
     public function index(): void
@@ -106,9 +103,12 @@ class AuthController extends BaseController
         AuthMiddleware::redirect('/patient/dashboard');
     }
 
-    // GET /logout
+    // POST /logout
     public function logout(): void
     {
+        if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
+            AuthMiddleware::redirect('/login');
+        }
         $this->auth->logout();
         AuthMiddleware::redirect('/login');
     }

@@ -176,18 +176,15 @@ class AdminRepository extends BaseRepository
 
     public function deactivateDoctor(int $doctorId): void
     {
-        // Блокируем логин, не удаляем данные
         $this->db->prepare(
-            "UPDATE users SET role = 'disabled'
-            WHERE id = (SELECT user_id FROM doctors WHERE id = ?)"
+            "UPDATE doctors SET is_active = 0 WHERE id = ?"
         )->execute([$doctorId]);
     }
 
     public function activateDoctor(int $doctorId): void
     {
         $this->db->prepare(
-            "UPDATE users SET role = 'doctor'
-            WHERE id = (SELECT user_id FROM doctors WHERE id = ?)"
+            "UPDATE doctors SET is_active = 1 WHERE id = ?"
         )->execute([$doctorId]);
     }
 
@@ -348,6 +345,31 @@ class AdminRepository extends BaseRepository
              WHERE r.is_approved = 1
              ORDER BY r.created_at DESC"
         );
+        return $stmt->fetchAll();
+    }
+
+    public function countApprovedReviews(): int
+    {
+        return (int) $this->db->query(
+            "SELECT COUNT(*) FROM reviews WHERE is_approved = 1"
+        )->fetchColumn();
+    }
+
+    public function getApprovedReviewsPaginated(int $limit, int $offset): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT r.id, r.rating, r.review_text AS text, r.created_at,
+                    r.admin_reply, r.admin_reply_at,
+                    p.full_name AS patient_name,
+                    d.full_name AS doctor_name
+             FROM reviews r
+             JOIN patients p ON p.id = r.patient_id
+             JOIN doctors d ON d.id = r.doctor_id
+             WHERE r.is_approved = 1
+             ORDER BY r.created_at DESC
+             LIMIT ? OFFSET ?"
+        );
+        $stmt->execute([$limit, $offset]);
         return $stmt->fetchAll();
     }
 

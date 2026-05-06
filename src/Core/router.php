@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\Exceptions\ForbiddenException;
+use App\Exceptions\NotFoundException;
+
 class Router
 {
     private array $routes = [];
@@ -60,6 +63,19 @@ class Router
 
     public function dispatch(): void
     {
+        try {
+            $this->doDispatch();
+        } catch (NotFoundException $e) {
+            http_response_code(404);
+            View::render('errors/404');
+        } catch (ForbiddenException $e) {
+            http_response_code(403);
+            View::render('errors/404');
+        }
+    }
+
+    private function doDispatch(): void
+    {
         $method = $_SERVER['REQUEST_METHOD'];
         $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
@@ -79,9 +95,11 @@ class Router
                 continue;
             }
 
-            // /user/{id} → /user/([^/]+)
-            $pattern = preg_replace('/\{[^}]+\}/', '([^/]+)', $routePath);
-            $pattern = '#^' . $pattern . '$#';
+            // /user/{id} → extract names, build pattern /user/([^/]+)
+            preg_match_all('/\{([^}]+)\}/', $routePath, $paramNames);
+            $paramNames = $paramNames[1];
+            $pattern    = preg_replace('/\{[^}]+\}/', '([^/]+)', $routePath);
+            $pattern    = '#^' . $pattern . '$#';
 
             if (preg_match($pattern, $uri, $matches)) {
                 array_shift($matches);
@@ -97,16 +115,22 @@ class Router
                 [$controllerClass, $method_name] = $handler;
 
                 if (!class_exists($controllerClass)) {
-                    die("Контроллер не найден: {$controllerClass}");
+                    throw new \RuntimeException("Контроллер не найден: {$controllerClass}");
                 }
 
                 $controller = new $controllerClass();
 
                 if (!method_exists($controller, $method_name)) {
-                    die("Метод не найден: {$controllerClass}::{$method_name}");
+                    throw new \RuntimeException("Метод не найден: {$controllerClass}::{$method_name}");
                 }
 
-                $controller->$method_name(...$matches);
+                // Pass route params as named arguments when names are available
+                if ($paramNames !== []) {
+                    $named = array_combine($paramNames, $matches);
+                    $controller->$method_name(...$named);
+                } else {
+                    $controller->$method_name(...$matches);
+                }
                 return;
             }
         }

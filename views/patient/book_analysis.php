@@ -1,26 +1,45 @@
 <?php
 use App\Core\View;
 require ROOT_PATH . '/views/layout/public_header.php';
+require ROOT_PATH . '/views/partials/icon.php';
 ?>
 
 <a href="<?= BASE_URL ?>/patient/dashboard" class="back-link">← Личный кабинет</a>
-<h1 class="page-title mb-3">Запись на анализ</h1>
+<h1 class="page-title u-mb-6">Запись на анализ</h1>
 
 <?php if ($error): ?>
-    <div class="alert alert-error"><?= View::e($error) ?></div>
+    <div class="alert alert--error" role="alert">
+        <span class="alert__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+            </svg>
+        </span>
+        <span class="alert__body"><?= View::e($error) ?></span>
+    </div>
 <?php endif; ?>
 
-<!-- Выбор анализа -->
+<!-- Шаг 1: Выбор анализа -->
 <div class="booking-step">
     <div class="booking-step-title">
-        <?= $selectedTest ? '<span class="step-done">✅</span> Анализ выбран' : '1. Выберите анализ' ?>
+        <?php if ($selectedTest): ?>
+            <span class="step-done">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 6 9 17l-5-5"/>
+                </svg>
+            </span>
+            Анализ выбран
+        <?php else: ?>
+            <span class="step-num">1</span>
+            Выберите анализ
+        <?php endif; ?>
     </div>
 
     <?php if (!$selectedTest): ?>
         <?php foreach ($grouped as $category => $tests): ?>
-            <div style="margin-bottom:20px">
-                <div style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;
-                            letter-spacing:.05em;margin-bottom:10px">
+            <div class="u-mb-5">
+                <div class="lab-category">
                     <?= View::e($category) ?>
                 </div>
                 <div class="lab-grid">
@@ -29,7 +48,10 @@ require ROOT_PATH . '/views/layout/public_header.php';
                            class="lab-card">
                             <div class="lab-name"><?= View::e($test['name']) ?></div>
                             <?php if ($test['preparation']): ?>
-                                <div class="lab-prep">🔔 <?= View::e($test['preparation']) ?></div>
+                                <div class="lab-prep">
+                                    <?php icon('bell', 12) ?>
+                                    <?= View::e($test['preparation']) ?>
+                                </div>
                             <?php endif; ?>
                             <div class="lab-price"><?= number_format((float)$test['price'], 0, '.', ' ') ?> ₽</div>
                         </a>
@@ -38,31 +60,40 @@ require ROOT_PATH . '/views/layout/public_header.php';
             </div>
         <?php endforeach; ?>
     <?php else: ?>
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div class="u-flex u-ai-start u-jc-between u-flex-wrap u-gap-3">
             <div>
-                <div style="font-size:15px;font-weight:600"><?= View::e($selectedTest['name']) ?></div>
+                <div class="u-text-base u-fw-semibold"><?= View::e($selectedTest['name']) ?></div>
                 <?php if ($selectedTest['preparation']): ?>
-                    <div class="alert alert-warning mt-1" style="margin-bottom:0">
-                        🔔 Подготовка: <?= View::e($selectedTest['preparation']) ?>
+                    <div class="alert alert--warning u-mt-2 u-mb-0">
+                        <span class="alert__icon"><?php icon('bell', 16) ?></span>
+                        <span class="alert__body">Подготовка: <?= View::e($selectedTest['preparation']) ?></span>
                     </div>
                 <?php endif; ?>
             </div>
-            <div style="display:flex;align-items:center;gap:16px">
-                <span style="font-size:16px;font-weight:700">
+            <div class="u-flex u-ai-center u-gap-4">
+                <span class="u-text-lg u-fw-bold">
                     <?= number_format((float)$selectedTest['price'], 0, '.', ' ') ?> ₽
                 </span>
-                <a href="<?= BASE_URL ?>/patient/book/analysis"
-                   style="font-size:13px;color:#dc2626">Сменить</a>
+                <a href="<?= BASE_URL ?>/patient/book/analysis" class="btn btn--ghost btn--sm">Сменить</a>
             </div>
         </div>
     <?php endif; ?>
 </div>
 
-<!-- Выбор даты -->
+<!-- Шаг 2: Выбор даты -->
 <?php if ($selectedTest && !empty($availableDates)): ?>
 <div class="booking-step">
     <div class="booking-step-title">
-        <?= $selectedDate ? '<span class="step-done">✅</span>' : '2.' ?>
+        <?php if ($selectedDate): ?>
+            <span class="step-done">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 6 9 17l-5-5"/>
+                </svg>
+            </span>
+        <?php else: ?>
+            <span class="step-num">2</span>
+        <?php endif; ?>
         Выберите дату
     </div>
     <div class="date-pills">
@@ -73,18 +104,19 @@ require ROOT_PATH . '/views/layout/public_header.php';
             <a href="<?= BASE_URL ?>/patient/book/analysis?test_id=<?= (int)$selectedTest['id'] ?>&date=<?= $day ?>"
                class="date-pill <?= $day === $selectedDate ? 'active' : '' ?>">
                 <?= date('d.m', strtotime($day)) ?>
-                <span style="opacity:.7"><?= $dow ?></span>
+                <span class="u-opacity-70 u-text-xs"><?= $dow ?></span>
             </a>
         <?php endforeach; ?>
     </div>
 </div>
 
-<!-- Выбор времени -->
+<!-- Шаг 3: Выбор времени -->
 <?php if ($selectedDate): ?>
 <div class="booking-step">
     <div class="booking-step-title">
-        3. Выберите время
-        <span style="font-size:13px;font-weight:400;color:#888">
+        <span class="step-num">3</span>
+        Выберите время
+        <span class="u-text-sm u-fw-normal u-text-muted">
             — <?= date('d.m.Y', strtotime($selectedDate)) ?>
         </span>
     </div>
@@ -92,7 +124,7 @@ require ROOT_PATH . '/views/layout/public_header.php';
     <?php $available = array_filter($slots, fn($s) => $s['available']); ?>
 
     <?php if (empty($available)): ?>
-        <p class="text-muted">Все слоты на этот день заняты. Выберите другую дату.</p>
+        <p class="u-text-muted">Все слоты на этот день заняты. Выберите другую дату.</p>
     <?php else: ?>
         <form method="POST" action="<?= BASE_URL ?>/patient/book/analysis">
             <input type="hidden" name="csrf_token"
@@ -116,14 +148,15 @@ require ROOT_PATH . '/views/layout/public_header.php';
                 <?php endforeach; ?>
             </div>
 
-            <div id="confirm-block" style="display:none">
+            <div id="confirm-block" class="u-hidden">
                 <div class="confirm-block">
-                    🧪 <strong><?= View::e($selectedTest['name']) ?></strong>
+                    <?php icon('flask-conical', 16) ?>
+                    <strong><?= View::e($selectedTest['name']) ?></strong>
                     · <?= date('d.m.Y', strtotime($selectedDate)) ?>
                     в <strong id="confirm-time">—</strong>
                     · <?= number_format((float)$selectedTest['price'], 0, '.', ' ') ?> ₽
                 </div>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn--primary">
                     Подтвердить запись
                 </button>
             </div>

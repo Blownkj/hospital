@@ -29,9 +29,17 @@ class Validator
         return strtotime($value) > time();
     }
 
+    public static function dateInPast(string $value): bool
+    {
+        if ($value === '' || !strtotime($value)) {
+            return false;
+        }
+        return strtotime($value) < time();
+    }
+
     public static function time(string $value): bool
     {
-        return (bool)preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $value);
+        return (bool)preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $value);
     }
 
     public static function nonEmpty(string $value, int $minLen = 1): bool

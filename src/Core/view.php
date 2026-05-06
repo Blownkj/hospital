@@ -16,7 +16,7 @@ class View
         $file = ROOT_PATH . '/views/' . $template . '.php';
 
         if (!file_exists($file)) {
-            die("Шаблон не найден: {$file}");
+            throw new \RuntimeException("Шаблон не найден: {$file}");
         }
 
         // Делаем переменные из массива доступными в шаблоне

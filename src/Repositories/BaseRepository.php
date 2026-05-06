@@ -8,6 +8,10 @@ use PDO;
 
 abstract class BaseRepository
 {
+    protected const DEFAULT_LIMIT  = 20;
+    protected const HISTORY_LIMIT  = 30;
+    protected const DASHBOARD_LIMIT = 10;
+
     protected PDO $db;
     protected string $table = '';
 

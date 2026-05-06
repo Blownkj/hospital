@@ -10,24 +10,24 @@ class ReviewRepository extends BaseRepository
 {
     protected string $table = 'reviews';
 
-    /** Уже оставил ли пациент отзыв на этого врача? */
-    public function exists(int $patientId, int $doctorId): bool
+    /** Уже оставлен ли отзыв на данный приём? */
+    public function existsByAppointment(int $appointmentId): bool
     {
         $stmt = $this->db->prepare(
-            "SELECT COUNT(*) FROM reviews WHERE patient_id = ? AND doctor_id = ?"
+            "SELECT COUNT(*) FROM reviews WHERE appointment_id = ?"
         );
-        $stmt->execute([$patientId, $doctorId]);
+        $stmt->execute([$appointmentId]);
         return (int) $stmt->fetchColumn() > 0;
     }
 
     /** Создать отзыв */
-    public function create(int $patientId, int $doctorId, int $rating, string $review_text): void
+    public function create(int $patientId, int $doctorId, int $appointmentId, int $rating, string $review_text): void
     {
         $stmt = $this->db->prepare(
-            "INSERT INTO reviews (patient_id, doctor_id, rating, review_text, is_approved, created_at)
-             VALUES (?, ?, ?, ?, 0, NOW())"
+            "INSERT INTO reviews (patient_id, doctor_id, appointment_id, rating, review_text, is_approved, created_at)
+             VALUES (?, ?, ?, ?, ?, 0, NOW())"
         );
-        $stmt->execute([$patientId, $doctorId, $rating, $review_text]);
+        $stmt->execute([$patientId, $doctorId, $appointmentId, $rating, $review_text]);
     }
 
     /** Одобренные отзывы для страницы врача */
@@ -56,16 +56,18 @@ class ReviewRepository extends BaseRepository
         return round((float) $stmt->fetchColumn(), 1);
     }
 
-    /** Список врачей у которых пациент завершил приём (для формы отзыва) */
-    public function getDoctorsVisited(int $patientId): array
+    /** Завершённые приёмы пациента, на которые ещё нет отзыва (для формы отзыва) */
+    public function getCompletedWithoutReview(int $patientId): array
     {
         $stmt = $this->db->prepare(
-            "SELECT DISTINCT d.id, d.full_name, s.name AS specialization
+            "SELECT a.id AS appointment_id, a.scheduled_at,
+                    d.id AS doctor_id, d.full_name, s.name AS specialization
              FROM appointments a
              JOIN doctors d ON d.id = a.doctor_id
              JOIN specializations s ON s.id = d.specialization_id
-             WHERE a.patient_id = ? AND a.status = 'completed'
-             ORDER BY d.full_name"
+             LEFT JOIN reviews r ON r.appointment_id = a.id
+             WHERE a.patient_id = ? AND a.status = 'completed' AND r.id IS NULL
+             ORDER BY a.scheduled_at DESC"
         );
         $stmt->execute([$patientId]);
         return $stmt->fetchAll();

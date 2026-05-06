@@ -1,177 +1,160 @@
 <?php
 use App\Core\View;
 require ROOT_PATH . '/views/layout/public_header.php';
+require ROOT_PATH . '/views/partials/icon.php';
 ?>
 
+<!-- Hero -->
 <div class="hero">
-    <h1>Ваше здоровье — наш приоритет</h1>
-    <p>Опытные специалисты, современное оборудование, удобная запись онлайн</p>
-    <div class="hero-btns">
-        <a href="<?= BASE_URL ?>/register" class="btn-white">Записаться на приём</a>
-        <a href="<?= BASE_URL ?>/doctors"  class="btn-outline">Наши врачи</a>
+    <h1 class="hero__title">Ваше здоровье — наш приоритет</h1>
+    <p class="hero__lead">Опытные специалисты, современное оборудование, удобная запись онлайн</p>
+    <div class="hero__actions">
+        <a href="<?= BASE_URL ?>/register" class="btn btn--white btn--lg">Записаться на приём</a>
+        <a href="<?= BASE_URL ?>/doctors"  class="btn btn--outline-white btn--lg">Наши врачи</a>
     </div>
 </div>
 
-<!-- Счётчики из БД -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:48px">
-    <div class="feature-card">
-        <div class="feature-icon">👥</div>
-        <div style="font-size:28px;font-weight:700;color:#4a90e2;margin-bottom:4px">
-            <?= number_format((int)($stats['patients'] ?? 0)) ?>
-        </div>
-        <div style="font-size:13px;color:#888">Пациентов</div>
+<!-- Счётчики -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card__icon"><?php icon('users', 28) ?></div>
+        <div class="stat-card__value"><?= number_format((int)($stats['patients'] ?? 0)) ?></div>
+        <div class="stat-card__label">Пациентов</div>
     </div>
-    <div class="feature-card">
-        <div class="feature-icon">👨‍⚕️</div>
-        <div style="font-size:28px;font-weight:700;color:#4a90e2;margin-bottom:4px">
-            <?= number_format((int)($stats['doctors'] ?? 0)) ?>
-        </div>
-        <div style="font-size:13px;color:#888">Специалистов</div>
+    <div class="stat-card">
+        <div class="stat-card__icon"><?php icon('stethoscope', 28) ?></div>
+        <div class="stat-card__value"><?= number_format((int)($stats['doctors'] ?? 0)) ?></div>
+        <div class="stat-card__label">Специалистов</div>
     </div>
-    <div class="feature-card">
-        <div class="feature-icon">⭐</div>
-        <div style="font-size:28px;font-weight:700;color:#4a90e2;margin-bottom:4px">
-            <?= number_format((int)($stats['reviews'] ?? 0)) ?>
-        </div>
-        <div style="font-size:13px;color:#888">Одобренных отзывов</div>
+    <div class="stat-card">
+        <div class="stat-card__icon"><?php icon('star', 28) ?></div>
+        <div class="stat-card__value"><?= number_format((int)($stats['reviews'] ?? 0)) ?></div>
+        <div class="stat-card__label">Одобренных отзывов</div>
     </div>
 </div>
 
-<!-- Врачи (превью — первые 4) -->
+<!-- Врачи (превью) -->
 <div class="section-title">Наши специалисты</div>
 <div class="doctors-grid">
     <?php foreach (array_slice($doctors, 0, 4) as $doctor): ?>
         <?php $clickable = true; include ROOT_PATH . '/views/partials/doctor-card.php'; ?>
     <?php endforeach; ?>
 </div>
-<p style="text-align:center;margin-bottom:48px">
-    <a href="<?= BASE_URL ?>/doctors" class="btn btn-primary btn-sm">Все специалисты →</a>
+<p class="u-text-center u-mb-12">
+    <a href="<?= BASE_URL ?>/doctors" class="btn btn--primary btn--sm">Все специалисты</a>
 </p>
 
 <!-- Почему мы -->
 <div class="section-title">Почему выбирают нас</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:48px">
+<div class="features-grid">
     <?php foreach ([
-        ['🩺', 'Опытные специалисты',   'Врачи с опытом от 10 лет, кандидаты медицинских наук, регулярно повышающие квалификацию'],
-        ['📅', 'Удобная онлайн-запись', 'Запись к врачу в любое время суток — без звонков и очередей. Напоминание за день до визита'],
-        ['🔬', 'Диагностика на месте',  'Современное оборудование: УЗИ, ЭКГ, лабораторные анализы без направления в другие клиники'],
-        ['💊', 'Доказательная медицина','Лечение по актуальным международным протоколам — без лишних назначений и устаревших схем'],
-        ['🔒', 'Конфиденциальность',    'Медицинская карта доступна только вам и вашему врачу. Данные надёжно защищены'],
-        ['⭐', 'Высокий рейтинг',       'Средняя оценка врачей нашей клиники — 4.9 из 5 по отзывам пациентов'],
-    ] as [$icon, $title, $desc]): ?>
-        <div class="card" style="margin-bottom:0;text-align:center;padding:28px 20px">
-            <div style="font-size:36px;margin-bottom:12px"><?= $icon ?></div>
-            <div style="font-size:15px;font-weight:600;margin-bottom:8px;color:#1a1a2e"><?= View::e($title) ?></div>
-            <div style="font-size:13px;color:#777;line-height:1.6"><?= View::e($desc) ?></div>
+        ['stethoscope', 'Опытные специалисты',   'Врачи с опытом от 10 лет, кандидаты медицинских наук, регулярно повышающие квалификацию'],
+        ['calendar',    'Удобная онлайн-запись',  'Запись к врачу в любое время суток — без звонков и очередей. Напоминание за день до визита'],
+        ['microscope',  'Диагностика на месте',   'Современное оборудование: УЗИ, ЭКГ, лабораторные анализы без направления в другие клиники'],
+        ['pill',        'Доказательная медицина', 'Лечение по актуальным международным протоколам — без лишних назначений и устаревших схем'],
+        ['shield-check','Конфиденциальность',     'Медицинская карта доступна только вам и вашему врачу. Данные надёжно защищены'],
+        ['star',        'Высокий рейтинг',        'Средняя оценка врачей нашей клиники — 4.9 из 5 по отзывам пациентов'],
+    ] as [$iconName, $title, $desc]): ?>
+        <div class="feature-card">
+            <div class="feature-card__icon"><?php icon($iconName, 28) ?></div>
+            <div class="feature-card__name"><?= View::e($title) ?></div>
+            <div class="feature-card__text"><?= View::e($desc) ?></div>
         </div>
     <?php endforeach; ?>
 </div>
 
-<!-- Наши специализации -->
+<!-- Специализации -->
 <?php if (!empty($specializations)): ?>
 <div class="section-title">Наши специализации</div>
 <?php
-$specIcons = [
-    'Терапевт'    => '🩺',
-    'Кардиолог'   => '❤️',
-    'Невролог'    => '🧠',
-    'Дерматолог'  => '🔬',
-    'Хирург'      => '🔪',
-    'Педиатр'     => '👶',
-    'Эндокринолог'=> '⚗️',
-    'Офтальмолог' => '👁️',
-    'Ортопед'     => '🦴',
-    'Гинеколог'   => '🌸',
+$specIconMap = [
+    'Терапевт'     => 'stethoscope',
+    'Кардиолог'    => 'heart',
+    'Невролог'     => 'brain',
+    'Дерматолог'   => 'microscope',
+    'Хирург'       => 'scissors',
+    'Педиатр'      => 'user-round',
+    'Эндокринолог' => 'flask-conical',
+    'Офтальмолог'  => 'eye',
+    'Ортопед'      => 'bone',
+    'Гинеколог'    => 'flower',
 ];
 ?>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:48px">
+<div class="spec-grid">
     <?php foreach ($specializations as $spec): ?>
-        <a href="<?= BASE_URL ?>/doctors?spec=<?= (int)$spec['id'] ?>"
-           style="text-decoration:none;color:inherit"
-           class="card">
-            <div style="display:flex;align-items:center;gap:14px;margin-bottom:0">
-                <div style="font-size:28px;width:44px;height:44px;background:#eef3fd;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                    <?= $specIcons[$spec['name']] ?? '🏥' ?>
-                </div>
-                <div>
-                    <div style="font-size:14px;font-weight:600;color:#1a1a2e"><?= View::e($spec['name']) ?></div>
-                    <?php if (!empty($spec['description'])): ?>
-                        <div style="font-size:12px;color:#888;margin-top:2px;line-height:1.4">
-                            <?= View::e(mb_strimwidth($spec['description'], 0, 50, '…')) ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
+        <?php $iconName = $specIconMap[$spec['name']] ?? 'stethoscope'; ?>
+        <a href="<?= BASE_URL ?>/doctors?spec=<?= (int)$spec['id'] ?>" class="spec-card">
+            <div class="spec-card__icon"><?php icon($iconName, 20) ?></div>
+            <div>
+                <div class="spec-card__name"><?= View::e($spec['name']) ?></div>
+                <?php if (!empty($spec['description'])): ?>
+                    <div class="spec-card__desc"><?= View::e(mb_strimwidth($spec['description'], 0, 50, '…')) ?></div>
+                <?php endif; ?>
             </div>
         </a>
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
-<!-- Последние статьи -->
+<!-- Статьи -->
 <?php if (!empty($recentArticles)): ?>
 <div class="section-title">Статьи о здоровье</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px">
-    <?php
-    $catIcons = [
-        'Подготовка к обследованию' => '🔬',
-        'Нормы и показатели'        => '📊',
-        'Когда к врачу'             => '🩺',
-        'Первая помощь'             => '🚑',
-        'Профилактика'              => '🛡️',
-        'Общее'                     => '📋',
-    ];
-    ?>
+<?php
+$catIconMap = [
+    'Подготовка к обследованию' => 'microscope',
+    'Нормы и показатели'        => 'activity',
+    'Когда к врачу'             => 'stethoscope',
+    'Первая помощь'             => 'alert-triangle',
+    'Профилактика'              => 'shield-check',
+    'Общее'                     => 'clipboard-list',
+];
+?>
+<div class="articles-grid">
     <?php foreach ($recentArticles as $art): ?>
-        <a href="<?= BASE_URL ?>/articles/<?= View::e($art['slug']) ?>"
-           class="card" style="text-decoration:none;color:inherit;margin-bottom:0;display:flex;flex-direction:column">
-            <div style="font-size:12px;color:#4a90e2;font-weight:500;margin-bottom:8px">
-                <?= ($catIcons[$art['category']] ?? '📋') . ' ' . View::e($art['category']) ?>
+        <a href="<?= BASE_URL ?>/articles/<?= View::e($art['slug']) ?>" class="article-card">
+            <div class="article-card__cat">
+                <?php icon($catIconMap[$art['category']] ?? 'clipboard-list', 12) ?>
+                <?= View::e($art['category']) ?>
             </div>
-            <div style="font-size:15px;font-weight:600;margin-bottom:8px;line-height:1.4">
-                <?= View::e($art['title']) ?>
-            </div>
-            <div style="font-size:13px;color:#777;flex:1;line-height:1.6">
-                <?= View::e(mb_strimwidth($art['excerpt'], 0, 100, '…')) ?>
-            </div>
-            <div style="font-size:12px;color:#aaa;margin-top:12px">
-                🕐 <?= (int)$art['read_time'] ?> мин · <span style="color:#4a90e2">Читать →</span>
+            <div class="article-card__title"><?= View::e($art['title']) ?></div>
+            <div class="article-card__excerpt"><?= View::e(mb_strimwidth($art['excerpt'], 0, 100, '…')) ?></div>
+            <div class="article-card__meta">
+                <?php icon('clock', 12) ?>
+                <?= (int)$art['read_time'] ?> мин
+                <span class="article-card__read-more">Читать →</span>
             </div>
         </a>
     <?php endforeach; ?>
 </div>
-<p style="text-align:center;margin-bottom:48px">
-    <a href="<?= BASE_URL ?>/articles" class="btn btn-sm" style="background:#f0f4ff;color:#4a90e2">Все статьи →</a>
+<p class="u-text-center u-mb-12">
+    <a href="<?= BASE_URL ?>/articles" class="btn btn--ghost btn--sm">Все статьи</a>
 </p>
 <?php endif; ?>
 
-<!-- Последние отзывы -->
+<!-- Отзывы -->
 <?php if (!empty($latestReviews)): ?>
 <div class="section-title">Отзывы пациентов</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:48px">
+<div class="reviews-grid">
     <?php foreach ($latestReviews as $review): ?>
-        <div class="card" style="margin-bottom:0">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-                <div class="doctor-avatar"
-                     style="width:40px;height:40px;font-size:14px;margin-bottom:0;flex-shrink:0">
-                    <?= View::e(View::initials($review['patient_name'])) ?>
+        <div class="review-card">
+            <div class="review-card__header">
+                <div class="review-card__avatar"><?= View::e(View::initials($review['patient_name'])) ?></div>
+                <div class="review-card__info">
+                    <div class="review-card__name"><?= View::e($review['patient_name']) ?></div>
+                    <div class="review-card__doctor"><?= View::e($review['doctor_name']) ?> · <?= View::e($review['specialization']) ?></div>
                 </div>
-                <div>
-                    <div style="font-size:13px;font-weight:500">
-                        <?= View::e($review['patient_name']) ?>
-                    </div>
-                    <div style="font-size:12px;color:#aaa">
-                        <?= View::e($review['doctor_name']) ?>
-                        · <?= View::e($review['specialization']) ?>
-                    </div>
+                <div class="review-card__stars">
+                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                             class="<?= $i <= (int)$review['rating'] ? 'filled' : '' ?>" aria-hidden="true">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                    <?php endfor; ?>
                 </div>
-                <span class="stars" style="margin-left:auto">
-                    <?= View::stars($review['rating']) ?>
-                </span>
             </div>
             <?php if ($review['text']): ?>
-                <p style="font-size:13px;color:#555;line-height:1.65">
-                    «<?= View::e(mb_strimwidth($review['text'], 0, 160, '...')) ?>»
-                </p>
+                <p class="review-card__text">«<?= View::e(mb_strimwidth($review['text'], 0, 160, '...')) ?>»</p>
             <?php endif; ?>
         </div>
     <?php endforeach; ?>

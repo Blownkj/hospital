@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS `specializations` (
     `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `name`        VARCHAR(100)     NOT NULL,
     `description` TEXT,
+    `image_url`   VARCHAR(500)     NULL,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -58,6 +59,7 @@ CREATE TABLE IF NOT EXISTS `doctors` (
     `specialization_id` INT UNSIGNED NOT NULL,
     `bio`               TEXT,
     `photo_url`         VARCHAR(500),
+    `is_active`         TINYINT(1)   NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_doctors_user_id` (`user_id`),
     INDEX `idx_doctors_spec` (`specialization_id`),
@@ -110,6 +112,7 @@ CREATE TABLE IF NOT EXISTS `services` (
     `price`             DECIMAL(10,2)  NOT NULL,
     `specialization_id` INT UNSIGNED,
     `description`       TEXT,
+    `image_url`         VARCHAR(500)   NULL,
     PRIMARY KEY (`id`),
     INDEX `idx_services_spec` (`specialization_id`),
     CONSTRAINT `fk_services_spec`
@@ -117,16 +120,33 @@ CREATE TABLE IF NOT EXISTS `services` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
--- 8. appointments (зависит от patients, doctors)
+-- 8. lab_tests (справочник анализов)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `lab_tests` (
+    `id`           INT UNSIGNED   NOT NULL AUTO_INCREMENT,
+    `name`         VARCHAR(255)   NOT NULL,
+    `category`     VARCHAR(100)   NOT NULL DEFAULT 'Общее',
+    `description`  TEXT,
+    `preparation`  TEXT,
+    `price`        DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
+    `duration_min` TINYINT UNSIGNED NOT NULL DEFAULT 30,
+    PRIMARY KEY (`id`),
+    INDEX `idx_lab_tests_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- 9. appointments (зависит от patients, doctors)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `appointments` (
-    `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `patient_id`   INT UNSIGNED NOT NULL,
-    `doctor_id`    INT UNSIGNED NOT NULL,
-    `scheduled_at` DATETIME     NOT NULL,
-    `status`       ENUM('pending','confirmed','in_progress','completed','cancelled')
-                   NOT NULL DEFAULT 'pending',
-    `created_at`   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `patient_id`       INT UNSIGNED NOT NULL,
+    `appointment_type` ENUM('doctor','lab_test') NOT NULL DEFAULT 'doctor',
+    `doctor_id`        INT UNSIGNED NULL,
+    `lab_test_id`      INT UNSIGNED NULL,
+    `scheduled_at`     DATETIME     NOT NULL,
+    `status`           ENUM('pending','confirmed','in_progress','completed','cancelled')
+                       NOT NULL DEFAULT 'pending',
+    `created_at`       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_appt_patient`          (`patient_id`),
     INDEX `idx_appt_doctor`           (`doctor_id`),
@@ -137,11 +157,13 @@ CREATE TABLE IF NOT EXISTS `appointments` (
     CONSTRAINT `fk_appt_patient`
         FOREIGN KEY (`patient_id`) REFERENCES `patients`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_appt_doctor`
-        FOREIGN KEY (`doctor_id`) REFERENCES `doctors`(`id`) ON DELETE CASCADE
+        FOREIGN KEY (`doctor_id`) REFERENCES `doctors`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_appt_lab_test`
+        FOREIGN KEY (`lab_test_id`) REFERENCES `lab_tests`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
--- 9. visits (зависит от appointments, связь 1:1)
+-- 10. visits (зависит от appointments, связь 1:1)
 --    Протокол приёма — создаётся когда врач нажимает "Начать приём"
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `visits` (
@@ -159,7 +181,7 @@ CREATE TABLE IF NOT EXISTS `visits` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
--- 10. prescriptions (зависит от visits)
+-- 11. prescriptions (зависит от visits)
 --     Назначения врача: препараты, процедуры, направления
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `prescriptions` (
@@ -176,7 +198,7 @@ CREATE TABLE IF NOT EXISTS `prescriptions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
--- 11. reviews (зависит от patients, doctors, appointments)
+-- 12. reviews (зависит от patients, doctors, appointments)
 --     Отзыв можно оставить только после завершённого приёма
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `reviews` (
@@ -204,7 +226,7 @@ CREATE TABLE IF NOT EXISTS `reviews` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
--- 12. articles (независимая, статьи о здоровье)
+-- 13. articles (независимая, статьи о здоровье)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `articles` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -215,22 +237,20 @@ CREATE TABLE IF NOT EXISTS `articles` (
     `category`     VARCHAR(100) NOT NULL DEFAULT 'Общее',
     `read_time`    TINYINT UNSIGNED NOT NULL DEFAULT 3 COMMENT 'минуты',
     `published_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `is_published` TINYINT(1) NOT NULL DEFAULT 1,
+    `author_id`    INT UNSIGNED NULL DEFAULT NULL,
+    `image_url`    VARCHAR(512) NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_articles_slug` (`slug`),
-    INDEX `idx_articles_category` (`category`)
+    INDEX `idx_articles_category` (`category`),
+    INDEX `idx_articles_published` (`is_published`),
+    CONSTRAINT `fk_articles_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Migrate existing databases (safe to run on fresh install too)
+ALTER TABLE `articles`
+    ADD COLUMN IF NOT EXISTS `is_published` TINYINT(1) NOT NULL DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS `author_id`    INT UNSIGNED NULL DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS `image_url`    VARCHAR(512) NULL DEFAULT NULL;
+
 SET FOREIGN_KEY_CHECKS = 1;
-
--- ============================================================
--- Composite indexes — run once on existing installs
--- (safe to re-run: ADD INDEX IF NOT EXISTS не поддерживается
---  MySQL < 8.0.31, поэтому игнорировать ошибку 1061 вручную)
--- ============================================================
-ALTER TABLE `appointments`
-    ADD INDEX `idx_appt_status_scheduled` (`status`, `scheduled_at`),
-    ADD INDEX `idx_appt_doctor_status`    (`doctor_id`, `status`),
-    ADD INDEX `idx_appt_patient_status`   (`patient_id`, `status`);
-
-ALTER TABLE `reviews`
-    ADD INDEX `idx_reviews_doctor_approved` (`doctor_id`, `is_approved`);

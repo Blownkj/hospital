@@ -12,7 +12,7 @@ abstract class BaseController
     {
         if (!Session::validateCsrfToken($_POST['csrf_token'] ?? '')) {
             http_response_code(419);
-            die('CSRF-токен недействителен.');
+            throw new \RuntimeException('CSRF-токен недействителен.');
         }
     }
 
@@ -24,7 +24,13 @@ abstract class BaseController
 
     protected function redirectBack(string $fallback = '/'): never
     {
-        $back = $_SERVER['HTTP_REFERER'] ?? $fallback;
+        $ref  = $_SERVER['HTTP_REFERER'] ?? '';
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+        $parsed = $ref !== '' ? parse_url($ref) : false;
+        // Only follow referer if it points to the same host (prevents open redirect)
+        $back = ($parsed && ($parsed['host'] ?? '') === $host)
+            ? ($parsed['path'] ?? $fallback)
+            : $fallback;
         AuthMiddleware::redirect($back);
     }
 
@@ -32,7 +38,7 @@ abstract class BaseController
     {
         if (!$condition) {
             http_response_code(403);
-            die($msg);
+            throw new \RuntimeException($msg);
         }
     }
 

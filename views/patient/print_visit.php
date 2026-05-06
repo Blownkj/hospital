@@ -184,7 +184,7 @@ $typeLabels = [
 </head>
 <body>
 
-<button class="print-btn" onclick="window.print()">🖨 Распечатать</button>
+<button class="print-btn" onclick="window.print()">Распечатать</button>
 
 <!-- Шапка -->
 <div class="header">

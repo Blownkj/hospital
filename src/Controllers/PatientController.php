@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Logger;
 use App\Core\Session;
 use App\Core\View;
 use App\Middleware\AuthMiddleware;
@@ -17,26 +18,16 @@ use App\Repositories\ReviewRepository;
 
 class PatientController extends BaseController
 {
-    private PatientRepository     $patients;
-    private DoctorRepository      $doctors;
-    private AppointmentRepository $appointments;
-    private AppointmentService    $appointmentService;
-    private LabTestRepository     $labTests;
-    private VisitRepository       $visits;
-    private ReviewRepository      $reviews;
-    private UserRepository        $users;
-
-    public function __construct()
-    {
-        $this->patients           = new PatientRepository();
-        $this->doctors            = new DoctorRepository();
-        $this->appointments       = new AppointmentRepository();
-        $this->appointmentService = new AppointmentService();
-        $this->labTests           = new LabTestRepository();
-        $this->visits             = new VisitRepository();
-        $this->reviews            = new ReviewRepository();
-        $this->users              = new UserRepository();
-    }
+    public function __construct(
+        private PatientRepository     $patients           = new PatientRepository(),
+        private DoctorRepository      $doctors            = new DoctorRepository(),
+        private AppointmentRepository $appointments       = new AppointmentRepository(),
+        private AppointmentService    $appointmentService = new AppointmentService(),
+        private LabTestRepository     $labTests           = new LabTestRepository(),
+        private VisitRepository       $visits             = new VisitRepository(),
+        private ReviewRepository      $reviews            = new ReviewRepository(),
+        private UserRepository        $users              = new UserRepository(),
+    ) {}
 
     // ── Дашборд ───────────────────────────────────────────────────────────
 
@@ -141,10 +132,10 @@ class PatientController extends BaseController
         $allDoctors = $this->doctors->getAllWithRating();
         $specs = [];
         foreach ($allDoctors as $d) {
-            $specs[$d['specialization_id']] = [
-                'id'    => $d['specialization_id'],
-                'name'  => $d['specialization'],
-                'count' => ($specs[$d['specialization_id']]['count'] ?? 0) + 1,
+            $specs[$d->specializationId] = [
+                'id'    => $d->specializationId,
+                'name'  => $d->specialization,
+                'count' => ($specs[$d->specializationId]['count'] ?? 0) + 1,
             ];
         }
 
@@ -164,7 +155,7 @@ class PatientController extends BaseController
         if ($specId) {
             $selectedSpec    = $specs[$specId] ?? null;
             $filteredDoctors = array_values(array_filter(
-                $allDoctors, fn($d) => (int)$d['specialization_id'] === $specId
+                $allDoctors, fn($d) => $d->specializationId === $specId
             ));
         }
 
@@ -376,9 +367,15 @@ class PatientController extends BaseController
             AuthMiddleware::redirect('/patient/appointments');
         }
 
-        $ok = $this->appointments->cancelByPatient(
-            (int)($_POST['appointment_id'] ?? 0), $patient['id']
-        );
+        $appointmentId = (int)($_POST['appointment_id'] ?? 0);
+        $ok = $this->appointments->cancelByPatient($appointmentId, $patient['id']);
+
+        if ($ok) {
+            Logger::get()->info('Patient cancelled appointment', [
+                'user_id'        => Session::get('user_id'),
+                'appointment_id' => $appointmentId,
+            ]);
+        }
 
         Session::setFlash($ok ? 'success' : 'error', $ok ? 'Запись отменена.' : 'Не удалось отменить.');
         AuthMiddleware::redirect('/patient/appointments');
@@ -390,20 +387,13 @@ class PatientController extends BaseController
         AuthMiddleware::requireRole('patient');
         $patient = $this->currentPatient();
 
-        $myReviews      = $this->reviews->getByPatient((int) $patient['id']);
-        $visitedDoctors = $this->reviews->getDoctorsVisited((int) $patient['id']);
-
-        // Убираем врачей, на которых отзыв уже есть
-        $reviewed = array_column($myReviews, 'doctor_name');
-        $canReview = array_filter(
-            $visitedDoctors,
-            fn($d) => !$this->reviews->exists((int) $patient['id'], (int) $d['id'])
-        );
+        $myReviews = $this->reviews->getByPatient((int) $patient['id']);
+        $canReview = $this->reviews->getCompletedWithoutReview((int) $patient['id']);
 
         View::render('patient/reviews', [
             'pageTitle'   => 'Мои отзывы',
             'myReviews'   => $myReviews,
-            'canReview'   => array_values($canReview),
+            'canReview'   => $canReview,
             'csrf'        => Session::generateCsrfToken(),
             'flash'       => Session::getFlash('success'),
             'error'       => Session::getFlash('error'),
@@ -416,10 +406,10 @@ class PatientController extends BaseController
         AuthMiddleware::requireRole('patient');
         $this->validateCsrf();
 
-        $patient  = $this->currentPatient();
-        $doctorId = (int) ($_POST['doctor_id'] ?? 0);
-        $rating   = (int) ($_POST['rating']    ?? 0);
-        $text     = trim($_POST['text']        ?? '');
+        $patient       = $this->currentPatient();
+        $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
+        $rating        = (int) ($_POST['rating']         ?? 0);
+        $text          = trim($_POST['text']             ?? '');
 
         if ($rating < 1 || $rating > 5) {
             Session::setFlash('error', 'Выберите оценку от 1 до 5.');
@@ -431,12 +421,29 @@ class PatientController extends BaseController
             AuthMiddleware::redirect('/patient/reviews');
         }
 
-        if ($this->reviews->exists((int) $patient['id'], $doctorId)) {
-            Session::setFlash('error', 'Вы уже оставляли отзыв этому врачу.');
+        // Verify appointment belongs to this patient and is completed
+        $appointment = $this->appointments->findById($appointmentId);
+        if (
+            $appointment === null ||
+            (int)$appointment['patient_id'] !== (int)$patient['id'] ||
+            $appointment['status'] !== 'completed'
+        ) {
+            Session::setFlash('error', 'Недопустимый приём.');
             AuthMiddleware::redirect('/patient/reviews');
         }
 
-        $this->reviews->create((int) $patient['id'], $doctorId, $rating, $text);
+        if ($this->reviews->existsByAppointment($appointmentId)) {
+            Session::setFlash('error', 'На этот приём отзыв уже оставлен.');
+            AuthMiddleware::redirect('/patient/reviews');
+        }
+
+        $this->reviews->create(
+            (int)$patient['id'],
+            (int)$appointment['doctor_id'],
+            $appointmentId,
+            $rating,
+            $text
+        );
         Session::setFlash('success', 'Отзыв отправлен на модерацию. Спасибо!');
         AuthMiddleware::redirect('/patient/reviews');
     }
