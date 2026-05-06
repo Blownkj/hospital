@@ -247,7 +247,44 @@ CREATE TABLE IF NOT EXISTS `articles` (
     CONSTRAINT `fk_articles_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ------------------------------------------------------------
+-- P2.7: CHECK constraints
+-- ------------------------------------------------------------
+ALTER TABLE `reviews`
+    ADD CONSTRAINT IF NOT EXISTS `chk_reviews_rating`
+        CHECK (`rating` BETWEEN 1 AND 5);
+
+ALTER TABLE `schedules`
+    ADD CONSTRAINT IF NOT EXISTS `chk_schedules_times`
+        CHECK (`start_time` < `end_time`);
+
+-- ------------------------------------------------------------
+-- P0.3: защита от race condition при бронировании
+-- Generated column содержит scheduled_at для активных записей и NULL для
+-- отменённых — уникальный индекс игнорирует NULL, поэтому у одного врача
+-- не может быть двух активных записей на одно время.
+-- Безопасно запускать повторно (IF NOT EXISTS).
+-- ------------------------------------------------------------
+ALTER TABLE `appointments`
+    ADD COLUMN IF NOT EXISTS `active_slot` DATETIME GENERATED ALWAYS AS (
+        IF(`status` <> 'cancelled', `scheduled_at`, NULL)
+    ) STORED COMMENT 'Generated: NULL for cancelled, scheduled_at for active — used by unique index';
+
+ALTER TABLE `appointments`
+    DROP INDEX IF EXISTS `uq_appt_doctor_active_slot`;
+
+ALTER TABLE `appointments`
+    ADD UNIQUE KEY `uq_appt_doctor_active_slot` (`doctor_id`, `active_slot`);
+
+-- ------------------------------------------------------------
 -- Migrate existing databases (safe to run on fresh install too)
+-- ------------------------------------------------------------
+ALTER TABLE `doctors`
+    ADD COLUMN IF NOT EXISTS `is_active` TINYINT(1) NOT NULL DEFAULT 1;
+
+ALTER TABLE `specializations`
+    ADD COLUMN IF NOT EXISTS `image_url` VARCHAR(500) NULL;
+
 ALTER TABLE `articles`
     ADD COLUMN IF NOT EXISTS `is_published` TINYINT(1) NOT NULL DEFAULT 1,
     ADD COLUMN IF NOT EXISTS `author_id`    INT UNSIGNED NULL DEFAULT NULL,

@@ -137,13 +137,34 @@ class AppointmentService
             return $errors;
         }
 
-        // Нет дубликата
-        if ($this->repo->alreadyBooked($patientId, $doctorId, $scheduledAt)) {
-            $errors['general'] = 'У вас уже есть запись к этому врачу в выбранное время.';
+        // Бронируем внутри транзакции с блокировкой — защита от race condition
+        try {
+            $this->repo->transaction(function () use ($patientId, $doctorId, $scheduledAt): void {
+                // SELECT FOR UPDATE удерживает строку до commit/rollback,
+                // не позволяя параллельному запросу пройти проверку одновременно
+                if ($this->repo->lockSlot($doctorId, $scheduledAt)) {
+                    throw new \DomainException('Выбранный слот уже занят. Пожалуйста, выберите другое время.');
+                }
+
+                if ($this->repo->alreadyBooked($patientId, $doctorId, $scheduledAt)) {
+                    throw new \DomainException('У вас уже есть запись к этому врачу в выбранное время.');
+                }
+
+                $this->repo->create($patientId, $doctorId, $scheduledAt);
+            });
+        } catch (\DomainException $e) {
+            $errors['general'] = $e->getMessage();
             return $errors;
+        } catch (\PDOException $e) {
+            // Страховка: уникальный индекс uq_appt_doctor_active_slot поймает
+            // дубль, если транзакция по какой-то причине не сработала
+            if ($e->getCode() === '23000') {
+                $errors['general'] = 'Выбранный слот уже занят. Пожалуйста, выберите другое время.';
+                return $errors;
+            }
+            throw $e;
         }
 
-        $this->repo->create($patientId, $doctorId, $scheduledAt);
         return [];
     }
 }

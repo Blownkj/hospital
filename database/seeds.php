@@ -6,6 +6,11 @@ require_once __DIR__ . '/../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
+if (($_ENV['APP_ENV'] ?? '') === 'production') {
+    fwrite(STDERR, "ERROR: seeds.php must not run in production. Aborting.\n");
+    exit(1);
+}
+
 try {
     $pdo = new PDO(
         sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',

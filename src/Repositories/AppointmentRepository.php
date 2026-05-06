@@ -45,10 +45,10 @@ class AppointmentRepository extends BaseRepository
             "SELECT TIME_FORMAT(scheduled_at, '%H:%i') AS t
              FROM appointments
              WHERE doctor_id = ?
-               AND DATE(scheduled_at) = ?
+               AND scheduled_at >= ? AND scheduled_at < DATE_ADD(?, INTERVAL 1 DAY)
                AND status NOT IN ('cancelled')"
         );
-        $stmt->execute([$doctorId, $date]);
+        $stmt->execute([$doctorId, $date, $date]);
         return array_column($stmt->fetchAll(), 't');
     }
 
@@ -62,6 +62,25 @@ class AppointmentRepository extends BaseRepository
              LIMIT 1"
         );
         $stmt->execute([$patientId, $doctorId, $scheduledAt]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    /**
+     * Проверяет занятость слота и удерживает блокировку строки до конца транзакции.
+     * Вызывать только внутри транзакции (transaction()).
+     * Возвращает true, если слот уже занят любым пациентом.
+     */
+    public function lockSlot(int $doctorId, string $scheduledAt): bool
+    {
+        $stmt = $this->db->prepare(
+            "SELECT 1 FROM appointments
+             WHERE doctor_id = ?
+               AND scheduled_at = ?
+               AND status NOT IN ('cancelled')
+             LIMIT 1
+             FOR UPDATE"
+        );
+        $stmt->execute([$doctorId, $scheduledAt]);
         return (bool)$stmt->fetchColumn();
     }
 
@@ -129,11 +148,11 @@ class AppointmentRepository extends BaseRepository
         $params = [];
 
         if ($from) {
-            $sql .= ' AND DATE(a.scheduled_at) >= ?';
-            $params[] = $from;
+            $sql .= ' AND a.scheduled_at >= ?';
+            $params[] = $from . ' 00:00:00';
         }
         if ($to) {
-            $sql .= ' AND DATE(a.scheduled_at) <= ?';
+            $sql .= ' AND a.scheduled_at < DATE_ADD(?, INTERVAL 1 DAY)';
             $params[] = $to;
         }
 
@@ -204,7 +223,7 @@ class AppointmentRepository extends BaseRepository
              FROM appointments a
              JOIN patients p ON p.id = a.patient_id
              WHERE a.doctor_id = ?
-               AND DATE(a.scheduled_at) = CURDATE()
+               AND a.scheduled_at >= CURDATE() AND a.scheduled_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
                AND a.status IN ('confirmed', 'pending', 'in_progress')
              ORDER BY a.scheduled_at"
         );

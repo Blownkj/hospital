@@ -22,7 +22,8 @@ class AdminRepository extends BaseRepository
             $params[] = $status;
         }
         if ($date) {
-            $where[] = 'DATE(a.scheduled_at) = ?';
+            $where[] = 'a.scheduled_at >= ? AND a.scheduled_at < DATE_ADD(?, INTERVAL 1 DAY)';
+            $params[] = $date;
             $params[] = $date;
         }
 
@@ -53,7 +54,8 @@ class AdminRepository extends BaseRepository
             $params[] = $status;
         }
         if ($date) {
-            $where[]  = 'DATE(a.scheduled_at) = ?';
+            $where[]  = 'a.scheduled_at >= ? AND a.scheduled_at < DATE_ADD(?, INTERVAL 1 DAY)';
+            $params[] = $date;
             $params[] = $date;
         }
 
@@ -77,7 +79,8 @@ class AdminRepository extends BaseRepository
             $params[] = $status;
         }
         if ($date) {
-            $where[]  = 'DATE(a.scheduled_at) = ?';
+            $where[]  = 'a.scheduled_at >= ? AND a.scheduled_at < DATE_ADD(?, INTERVAL 1 DAY)';
+            $params[] = $date;
             $params[] = $date;
         }
 
@@ -270,7 +273,8 @@ class AdminRepository extends BaseRepository
         )->fetchColumn();
 
         $stats['appointments_today'] = (int) $this->db->query(
-            "SELECT COUNT(*) FROM appointments WHERE DATE(scheduled_at) = CURDATE()"
+            "SELECT COUNT(*) FROM appointments
+             WHERE scheduled_at >= CURDATE() AND scheduled_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)"
         )->fetchColumn();
 
         $stats['pending_count'] = (int) $this->db->query(
@@ -280,8 +284,8 @@ class AdminRepository extends BaseRepository
         $stats['completed_this_month'] = (int) $this->db->query(
             "SELECT COUNT(*) FROM appointments
              WHERE status = 'completed'
-               AND MONTH(scheduled_at) = MONTH(CURDATE())
-               AND YEAR(scheduled_at) = YEAR(CURDATE())"
+               AND scheduled_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+               AND scheduled_at < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)"
         )->fetchColumn();
 
         return $stats;
