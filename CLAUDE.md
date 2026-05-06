@@ -191,11 +191,24 @@ Source of truth: `database/migrations.sql`.
 - Inserts specializations/users/doctors/schedules/patients/services/appointments/visits/prescriptions/reviews
 - Prints known credentials (e.g. `admin@hospital.local / password123`)
 
-## How to run (XAMPP)
-- Put repo under `c:\xampp\htdocs\hospital`
-- Visit: `http://localhost/hospital/public`
-- Create DB `hospital_is`, then import `database/migrations.sql`
-- (Optional) Run seeder: `php database/seeds.php`
+## How to run (Docker on Linux CachyOS with Fish shell)
+**Environment**: Linux CachyOS with Fish shell. Project runs via Docker Compose (PHP 8.1 + Apache, MySQL 8.0, phpMyAdmin).
+
+**Startup**:
+- Start all containers: `docker-compose up -d`
+- App: `http://localhost:8000/` (Apache document root = `/var/www/html/public`)
+- phpMyAdmin: `http://localhost:8081/` (user: `user` / password: `password`)
+- Database auto-initialized from `database/migrations.sql`
+
+**Running PHP commands through Docker**:
+- Always prefix with `docker-compose exec php`: `docker-compose exec php php database/seeds.php`
+- Syntax check: `docker-compose exec php php -l src/Core/Router.php`
+- Composer: `docker-compose exec php composer install`
+- Do NOT run bare `php` commands; route all through Docker
+
+**Credentials** (from docker-compose.yml):
+- DB: `hospital_is` / user `user` / password `password` (or `root` / `root`)
+- See `database/seeds.php` for app user accounts
 
 ## Coding standards (keep diffs consistent)
 - PHP files use `declare(strict_types=1);`
