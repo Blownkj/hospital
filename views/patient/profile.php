@@ -40,9 +40,21 @@ require ROOT_PATH . '/views/partials/icon.php';
             <input type="hidden" name="csrf_token" value="<?= View::e(Session::generateCsrfToken()) ?>">
 
             <div class="form__group">
-                <label class="form__label form__label--required" for="full_name">Полное имя</label>
-                <input class="form__control" type="text" id="full_name" name="full_name"
-                       value="<?= View::e($patient['full_name']) ?>" required>
+                <label class="form__label form__label--required" for="last_name">Фамилия</label>
+                <input class="form__control" type="text" id="last_name" name="last_name"
+                       value="<?= View::e($patient['last_name'] ?? '') ?>" required>
+            </div>
+
+            <div class="form__group">
+                <label class="form__label form__label--required" for="first_name">Имя</label>
+                <input class="form__control" type="text" id="first_name" name="first_name"
+                       value="<?= View::e($patient['first_name'] ?? '') ?>" required>
+            </div>
+
+            <div class="form__group">
+                <label class="form__label" for="middle_name">Отчество</label>
+                <input class="form__control" type="text" id="middle_name" name="middle_name"
+                       value="<?= View::e($patient['middle_name'] ?? '') ?>">
             </div>
 
             <div class="form__group">

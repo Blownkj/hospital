@@ -6,29 +6,6 @@ require ROOT_PATH . '/views/partials/icon.php';
 
 <a href="<?= BASE_URL ?>/doctor/dashboard" class="back-link">← Дашборд</a>
 
-<?php if ($flash): ?>
-    <div class="alert alert--success" role="alert">
-        <span class="alert__icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
-            </svg>
-        </span>
-        <span class="alert__body"><?= View::e($flash) ?></span>
-    </div>
-<?php endif; ?>
-<?php if ($error): ?>
-    <div class="alert alert--error" role="alert">
-        <span class="alert__icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
-            </svg>
-        </span>
-        <span class="alert__body"><?= View::e($error) ?></span>
-    </div>
-<?php endif; ?>
-
 <div class="page-header">
     <h1 class="page-title">Мой профиль</h1>
 </div>
@@ -50,26 +27,19 @@ require ROOT_PATH . '/views/partials/icon.php';
             <div class="u-text-primary u-text-sm"><?= View::e($profile['specialization']) ?></div>
         </div>
 
-        <form method="POST" action="<?= BASE_URL ?>/doctor/profile">
-            <input type="hidden" name="csrf_token" value="<?= View::e($csrf) ?>">
-
-            <div class="form__group">
-                <label class="form__label" for="photo_url">Ссылка на фото (URL)</label>
-                <input class="form__control" type="url" id="photo_url" name="photo_url"
-                       value="<?= View::e($profile['photo_url'] ?? '') ?>"
-                       placeholder="https://example.com/photo.jpg">
-                <p class="form__hint">Вставьте прямую ссылку на изображение</p>
+        <dl class="profile-info">
+            <div class="profile-info__row">
+                <dt class="profile-info__label">О себе</dt>
+                <dd class="profile-info__value">
+                    <?= $profile['bio'] ? nl2br(View::e($profile['bio'])) : '<span class="u-text-muted">Не указано</span>' ?>
+                </dd>
             </div>
+        </dl>
 
-            <div class="form__group">
-                <label class="form__label" for="bio">О себе</label>
-                <textarea class="form__control" id="bio" name="bio" rows="5"
-                          placeholder="Расскажите о своём опыте, специализации..."><?= View::e($profile['bio'] ?? '') ?></textarea>
-            </div>
-
-            <button type="submit" class="btn btn--primary btn--block">
-                Сохранить изменения
-            </button>
-        </form>
+        <p class="u-text-muted u-text-sm u-mt-4">
+            Для изменения данных профиля (ФИО, описание, фото) обратитесь к администратору.
+        </p>
     </div>
 </div>
+
+<?php require ROOT_PATH . '/views/layout/footer.php'; ?>

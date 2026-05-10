@@ -12,7 +12,7 @@ require ROOT_PATH . '/views/layout/public_header.php';
         <div class="faq-list">
             <?php foreach ($questions as $i => $item): ?>
             <div class="faq-item" id="faq-<?= $i ?>">
-                <button class="faq-question" onclick="toggleFaq(<?= $i ?>)" aria-expanded="false" aria-controls="faq-answer-<?= $i ?>">
+                <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-<?= $i ?>">
                     <span><?= View::e($item['q']) ?></span>
                     <span class="faq-icon" id="faq-icon-<?= $i ?>">+</span>
                 </button>
@@ -31,22 +31,5 @@ require ROOT_PATH . '/views/layout/public_header.php';
         <a href="<?= BASE_URL ?>/contact" class="btn btn--secondary u-mt-3">Написать нам</a>
     </div>
 </div>
-
-<script>
-function toggleFaq(i) {
-    const answer = document.getElementById('faq-answer-' + i);
-    const icon   = document.getElementById('faq-icon-' + i);
-    const btn    = answer.previousElementSibling;
-    const isOpen = answer.classList.contains('open');
-    document.querySelectorAll('.faq-answer').forEach(el => el.classList.remove('open'));
-    document.querySelectorAll('.faq-icon').forEach(el => el.textContent = '+');
-    document.querySelectorAll('.faq-question').forEach(el => el.setAttribute('aria-expanded', 'false'));
-    if (!isOpen) {
-        answer.classList.add('open');
-        icon.textContent = '−';
-        btn.setAttribute('aria-expanded', 'true');
-    }
-}
-</script>
 
 <?php require ROOT_PATH . '/views/layout/public_footer.php'; ?>

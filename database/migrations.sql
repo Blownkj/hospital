@@ -36,7 +36,9 @@ CREATE TABLE IF NOT EXISTS `users` (
 CREATE TABLE IF NOT EXISTS `patients` (
     `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id`           INT UNSIGNED NOT NULL,
-    `full_name`         VARCHAR(255) NOT NULL,
+    `last_name`         VARCHAR(100) NOT NULL,
+    `first_name`        VARCHAR(100) NOT NULL,
+    `middle_name`       VARCHAR(100) DEFAULT NULL,
     `birth_date`        DATE         NOT NULL,
     `phone`             VARCHAR(20),
     `gender`            ENUM('m','f','other') NOT NULL,
@@ -55,7 +57,9 @@ CREATE TABLE IF NOT EXISTS `patients` (
 CREATE TABLE IF NOT EXISTS `doctors` (
     `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id`           INT UNSIGNED NOT NULL,
-    `full_name`         VARCHAR(255) NOT NULL,
+    `last_name`         VARCHAR(100) NOT NULL,
+    `first_name`        VARCHAR(100) NOT NULL,
+    `middle_name`       VARCHAR(100) DEFAULT NULL,
     `specialization_id` INT UNSIGNED NOT NULL,
     `bio`               TEXT,
     `photo_url`         VARCHAR(500),
@@ -291,3 +295,40 @@ ALTER TABLE `articles`
     ADD COLUMN IF NOT EXISTS `image_url`    VARCHAR(512) NULL DEFAULT NULL;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ------------------------------------------------------------
+-- Нормализация ФИО: разбиваем full_name на last_name / first_name / middle_name
+-- ------------------------------------------------------------
+ALTER TABLE `patients`
+    ADD COLUMN `last_name`   VARCHAR(100) NOT NULL DEFAULT '' AFTER `user_id`,
+    ADD COLUMN `first_name`  VARCHAR(100) NOT NULL DEFAULT '' AFTER `last_name`,
+    ADD COLUMN `middle_name` VARCHAR(100) DEFAULT NULL AFTER `first_name`;
+
+UPDATE `patients` SET
+    last_name   = TRIM(SUBSTRING_INDEX(full_name, ' ', 1)),
+    first_name  = TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(full_name, ' ', 2), ' ', -1)),
+    middle_name = IF(
+        LENGTH(TRIM(full_name)) - LENGTH(REPLACE(TRIM(full_name), ' ', '')) >= 2,
+        TRIM(SUBSTRING_INDEX(TRIM(full_name), ' ', -1)),
+        NULL
+    )
+WHERE `last_name` = '' AND `full_name` != '';
+
+ALTER TABLE `patients` DROP COLUMN `full_name`;
+
+ALTER TABLE `doctors`
+    ADD COLUMN `last_name`   VARCHAR(100) NOT NULL DEFAULT '' AFTER `user_id`,
+    ADD COLUMN `first_name`  VARCHAR(100) NOT NULL DEFAULT '' AFTER `last_name`,
+    ADD COLUMN `middle_name` VARCHAR(100) DEFAULT NULL AFTER `first_name`;
+
+UPDATE `doctors` SET
+    last_name   = TRIM(SUBSTRING_INDEX(full_name, ' ', 1)),
+    first_name  = TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(full_name, ' ', 2), ' ', -1)),
+    middle_name = IF(
+        LENGTH(TRIM(full_name)) - LENGTH(REPLACE(TRIM(full_name), ' ', '')) >= 2,
+        TRIM(SUBSTRING_INDEX(TRIM(full_name), ' ', -1)),
+        NULL
+    )
+WHERE `last_name` = '' AND `full_name` != '';
+
+ALTER TABLE `doctors` DROP COLUMN `full_name`;

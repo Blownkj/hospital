@@ -138,8 +138,7 @@ require ROOT_PATH . '/views/partials/icon.php';
                 <?php foreach ($slots as $slot): ?>
                     <?php if ($slot['available']): ?>
                         <button type="button" class="slot-btn"
-                                data-time="<?= View::e($slot['time']) ?>"
-                                onclick="selectSlot('<?= View::e($slot['time']) ?>', this)">
+                                data-time="<?= View::e($slot['time']) ?>">
                             <?= View::e($slot['time']) ?>
                         </button>
                     <?php else: ?>

@@ -4,32 +4,64 @@ require ROOT_PATH . '/views/layout/public_header.php';
 require ROOT_PATH . '/views/partials/icon.php';
 ?>
 
-<!-- Hero -->
-<div class="hero">
-    <h1 class="hero__title">Ваше здоровье — наш приоритет</h1>
-    <p class="hero__lead">Опытные специалисты, современное оборудование, удобная запись онлайн</p>
-    <div class="hero__actions">
-        <a href="<?= BASE_URL ?>/register" class="btn btn--white btn--lg">Записаться на приём</a>
-        <a href="<?= BASE_URL ?>/doctors"  class="btn btn--outline-white btn--lg">Наши врачи</a>
+<!-- Hero v2 -->
+<section class="public-hero">
+    <div>
+        <div class="public-hero__eyebrow">
+            <span class="dot"></span>Принимаем · <?= (int)($doctors_count ?? 0) ?> специалистов
+        </div>
+        <h1 class="public-hero__title">
+            Здоровье — это <em>системная работа,</em><br>
+            а не разовый визит.
+        </h1>
+        <p class="public-hero__lead">
+            Многопрофильная клиника: <?= (int)($doctors_count ?? 0) ?> специалистов, собственная лаборатория,
+            прозрачные цены, запись онлайн без звонка.
+        </p>
+        <div class="public-hero__cta">
+            <a href="<?= BASE_URL ?>/register" class="btn btn--primary btn--lg">Записаться на приём →</a>
+            <a href="<?= BASE_URL ?>/doctors" class="btn btn--secondary btn--lg">Все врачи</a>
+        </div>
     </div>
-</div>
 
-<!-- Счётчики -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-card__icon"><?php icon('users', 28) ?></div>
-        <div class="stat-card__value"><?= number_format((int)($stats['patients'] ?? 0)) ?></div>
-        <div class="stat-card__label">Пациентов</div>
+    <aside class="public-hero__panel">
+        <h4>Запись онлайн</h4>
+        <form class="public-hero__quick" action="<?= BASE_URL ?>/patient/book" method="get">
+            <div>
+                <label>Направление</label>
+                <select name="spec_id">
+                    <option value="">Выберите специалиста…</option>
+                    <?php foreach ($specializations as $spec): ?>
+                        <option value="<?= (int)$spec['id'] ?>"><?= View::e($spec['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label>Дата</label>
+                <input type="date" name="date" min="<?= date('Y-m-d') ?>">
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">Найти слот</button>
+        </form>
+    </aside>
+</section>
+
+<!-- KPI-строка -->
+<div class="public-meta-row">
+    <div class="public-meta">
+        <div class="public-meta__label">Специалистов</div>
+        <div class="public-meta__value"><?= (int)($doctors_count ?? 0) ?></div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card__icon"><?php icon('stethoscope', 28) ?></div>
-        <div class="stat-card__value"><?= number_format((int)($stats['doctors'] ?? 0)) ?></div>
-        <div class="stat-card__label">Специалистов</div>
+    <div class="public-meta">
+        <div class="public-meta__label">Направлений</div>
+        <div class="public-meta__value"><?= (int)($specs_count ?? 0) ?></div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card__icon"><?php icon('star', 28) ?></div>
-        <div class="stat-card__value"><?= number_format((int)($stats['reviews'] ?? 0)) ?></div>
-        <div class="stat-card__label">Одобренных отзывов</div>
+    <div class="public-meta">
+        <div class="public-meta__label">Пациентов · 2025</div>
+        <div class="public-meta__value"><?= number_format((int)($patients_count ?? 0)) ?></div>
+    </div>
+    <div class="public-meta">
+        <div class="public-meta__label">Средний рейтинг</div>
+        <div class="public-meta__value"><?= number_format((float)($avg_rating ?? 0), 1) ?></div>
     </div>
 </div>
 
@@ -51,8 +83,7 @@ require ROOT_PATH . '/views/partials/icon.php';
         ['stethoscope', 'Опытные специалисты',   'Врачи с опытом от 10 лет, кандидаты медицинских наук, регулярно повышающие квалификацию'],
         ['calendar',    'Удобная онлайн-запись',  'Запись к врачу в любое время суток — без звонков и очередей. Напоминание за день до визита'],
         ['microscope',  'Диагностика на месте',   'Современное оборудование: УЗИ, ЭКГ, лабораторные анализы без направления в другие клиники'],
-        ['pill',        'Доказательная медицина', 'Лечение по актуальным международным протоколам — без лишних назначений и устаревших схем'],
-        ['shield-check','Конфиденциальность',     'Медицинская карта доступна только вам и вашему врачу. Данные надёжно защищены'],
+['shield-check','Конфиденциальность',     'Медицинская карта доступна только вам и вашему врачу. Данные надёжно защищены'],
         ['star',        'Высокий рейтинг',        'Средняя оценка врачей нашей клиники — 4.9 из 5 по отзывам пациентов'],
     ] as [$iconName, $title, $desc]): ?>
         <div class="feature-card">
@@ -63,37 +94,32 @@ require ROOT_PATH . '/views/partials/icon.php';
     <?php endforeach; ?>
 </div>
 
-<!-- Специализации -->
+<!-- Направления v2 -->
 <?php if (!empty($specializations)): ?>
-<div class="section-title">Наши специализации</div>
-<?php
-$specIconMap = [
-    'Терапевт'     => 'stethoscope',
-    'Кардиолог'    => 'heart',
-    'Невролог'     => 'brain',
-    'Дерматолог'   => 'microscope',
-    'Хирург'       => 'scissors',
-    'Педиатр'      => 'user-round',
-    'Эндокринолог' => 'flask-conical',
-    'Офтальмолог'  => 'eye',
-    'Ортопед'      => 'bone',
-    'Гинеколог'    => 'flower',
-];
-?>
-<div class="spec-grid">
-    <?php foreach ($specializations as $spec): ?>
-        <?php $iconName = $specIconMap[$spec['name']] ?? 'stethoscope'; ?>
-        <a href="<?= BASE_URL ?>/doctors?spec=<?= (int)$spec['id'] ?>" class="spec-card">
-            <div class="spec-card__icon"><?php icon($iconName, 20) ?></div>
-            <div>
-                <div class="spec-card__name"><?= View::e($spec['name']) ?></div>
-                <?php if (!empty($spec['description'])): ?>
-                    <div class="spec-card__desc"><?= View::e(mb_strimwidth($spec['description'], 0, 50, '…')) ?></div>
-                <?php endif; ?>
-            </div>
-        </a>
-    <?php endforeach; ?>
-</div>
+<section class="public-section">
+    <div class="public-section__head">
+        <h2 class="public-section__title">
+            Направления, <em>в которых мы работаем</em>
+        </h2>
+        <a class="public-section__more" href="<?= BASE_URL ?>/doctors">Все направления →</a>
+    </div>
+
+    <div class="spec-list">
+        <?php foreach ($specializations as $i => $spec): ?>
+            <a class="spec-item" href="<?= BASE_URL ?>/doctors?spec=<?= (int)$spec['id'] ?>">
+                <div class="spec-item__num"><?= sprintf('%02d', $i + 1) ?></div>
+                <div class="spec-item__name"><?= View::e($spec['name']) ?></div>
+                <div class="spec-item__doctors">
+                    <?php if ((int)$spec['doctors_count'] > 0): ?>
+                        <?= (int)$spec['doctors_count'] ?> врач(а/ей)
+                    <?php else: ?>
+                        скоро
+                    <?php endif; ?>
+                </div>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</section>
 <?php endif; ?>
 
 <!-- Статьи -->

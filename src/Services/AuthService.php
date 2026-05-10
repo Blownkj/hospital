@@ -67,13 +67,15 @@ class AuthService
         $errors = [];
 
         // Валидация
-        $email     = trim($data['email'] ?? '');
-        $password  = $data['password'] ?? '';
-        $password2 = $data['password2'] ?? '';
-        $fullName  = trim($data['full_name'] ?? '');
-        $birthDate = $data['birth_date'] ?? '';
-        $phone     = trim($data['phone'] ?? '');
-        $gender    = $data['gender'] ?? '';
+        $email      = trim($data['email'] ?? '');
+        $password   = $data['password'] ?? '';
+        $password2  = $data['password2'] ?? '';
+        $lastName   = trim($data['last_name']   ?? '');
+        $firstName  = trim($data['first_name']  ?? '');
+        $middleName = trim($data['middle_name'] ?? '');
+        $birthDate  = $data['birth_date'] ?? '';
+        $phone      = trim($data['phone'] ?? '');
+        $gender     = $data['gender'] ?? '';
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'Введите корректный email.';
@@ -87,8 +89,11 @@ class AuthService
             $errors['password2'] = 'Пароли не совпадают.';
         }
 
-        if (strlen($fullName) < 2) {
-            $errors['full_name'] = 'Введите полное имя.';
+        if (mb_strlen($lastName) < 2) {
+            $errors['last_name'] = 'Введите фамилию.';
+        }
+        if (mb_strlen($firstName) < 2) {
+            $errors['first_name'] = 'Введите имя.';
         }
 
         if (!Validator::dateInPast($birthDate)) {
@@ -106,7 +111,7 @@ class AuthService
         // Создаём пользователя + пациента в транзакции
         try {
             $this->users->createPatient(
-                $email, $password, $fullName, $birthDate, $phone, $gender
+                $email, $password, $lastName, $firstName, $middleName ?: null, $birthDate, $phone, $gender
             );
             Logger::get()->info('New patient registered', ['email' => $email]);
         } catch (\Throwable $e) {

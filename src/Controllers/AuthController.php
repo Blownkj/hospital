@@ -52,6 +52,12 @@ class AuthController extends BaseController
             AuthMiddleware::redirect('/login');
         }
 
+        $returnUrl = $_SESSION['auth_return_url'] ?? null;
+        unset($_SESSION['auth_return_url']);
+        if ($returnUrl) {
+            header('Location: ' . $returnUrl);
+            exit;
+        }
         AuthMiddleware::redirectToDashboard();
     }
 
@@ -76,13 +82,15 @@ class AuthController extends BaseController
         }
 
         $data = [
-            'email'      => trim($_POST['email'] ?? ''),
-            'password'   => $_POST['password'] ?? '',
-            'password2'  => $_POST['password2'] ?? '',
-            'full_name'  => trim($_POST['full_name'] ?? ''),
-            'birth_date' => $_POST['birth_date'] ?? '',
-            'phone'      => trim($_POST['phone'] ?? ''),
-            'gender'     => $_POST['gender'] ?? '',
+            'email'       => trim($_POST['email'] ?? ''),
+            'password'    => $_POST['password'] ?? '',
+            'password2'   => $_POST['password2'] ?? '',
+            'last_name'   => trim($_POST['last_name']   ?? ''),
+            'first_name'  => trim($_POST['first_name']  ?? ''),
+            'middle_name' => trim($_POST['middle_name'] ?? ''),
+            'birth_date'  => $_POST['birth_date'] ?? '',
+            'phone'       => trim($_POST['phone'] ?? ''),
+            'gender'      => $_POST['gender'] ?? '',
         ];
 
         $errors = $this->auth->register($data);

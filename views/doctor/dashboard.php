@@ -9,11 +9,12 @@ require ROOT_PATH . '/views/partials/icon.php';
 <div class="page-header u-mb-6">
     <div>
         <h1 class="page-title">
-            Добрый день, <?= View::e(explode(' ', $profile['full_name'])[1] ?? $profile['full_name']) ?>!
+            Добрый день, <?= View::e($profile['first_name']) ?>!
         </h1>
         <p class="u-text-muted u-text-sm"><?= View::e($profile['specialization']) ?></p>
     </div>
     <div class="u-flex u-gap-2">
+        <a href="<?= BASE_URL ?>/doctor/history" class="btn btn--secondary btn--sm">История</a>
         <a href="<?= BASE_URL ?>/doctor/profile" class="btn btn--secondary btn--sm">Профиль</a>
         <form method="POST" action="<?= BASE_URL ?>/logout" style="display:inline">
             <input type="hidden" name="csrf_token" value="<?= View::e(App\Core\Session::generateCsrfToken()) ?>">
@@ -124,12 +125,19 @@ require ROOT_PATH . '/views/partials/icon.php';
                     <?php endif; ?>
                 </div>
             </div>
-            <span class="badge badge--success">
-                <span class="badge__dot" aria-hidden="true"></span>
-                Завершён
-            </span>
+            <div class="u-flex u-ai-center u-gap-3">
+                <span class="badge badge--success">
+                    <span class="badge__dot" aria-hidden="true"></span>
+                    Завершён
+                </span>
+                <a href="<?= BASE_URL ?>/doctor/appointment/<?= (int)$appt['id'] ?>"
+                   class="btn btn--ghost btn--sm">Открыть</a>
+            </div>
         </div>
         <?php endforeach; ?>
+        <div class="u-text-center u-mt-4">
+            <a href="<?= BASE_URL ?>/doctor/history" class="btn btn--secondary btn--sm">Вся история →</a>
+        </div>
     </div>
 </div>
 <?php endif; ?>

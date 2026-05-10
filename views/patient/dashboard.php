@@ -31,7 +31,7 @@ require ROOT_PATH . '/views/partials/icon.php';
     <div>
         <h1 class="page-title">
             Добро пожаловать,
-            <?= View::e(explode(' ', $patient['full_name'])[1] ?? $patient['full_name']) ?>!
+            <?= View::e($patient['first_name']) ?>!
         </h1>
         <p class="u-text-muted u-text-sm"><?= View::e($patient['email']) ?></p>
     </div>

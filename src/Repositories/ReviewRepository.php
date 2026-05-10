@@ -36,7 +36,7 @@ class ReviewRepository extends BaseRepository
         $stmt = $this->db->prepare(
             "SELECT r.id, r.rating, r.review_text AS text, r.created_at,
                     r.admin_reply, r.admin_reply_at,
-                    p.full_name AS patient_name
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name
              FROM reviews r
              JOIN patients p ON p.id = r.patient_id
              WHERE r.doctor_id = ? AND r.is_approved = 1
@@ -61,7 +61,9 @@ class ReviewRepository extends BaseRepository
     {
         $stmt = $this->db->prepare(
             "SELECT a.id AS appointment_id, a.scheduled_at,
-                    d.id AS doctor_id, d.full_name, s.name AS specialization
+                    d.id AS doctor_id,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS full_name,
+                    s.name AS specialization
              FROM appointments a
              JOIN doctors d ON d.id = a.doctor_id
              JOIN specializations s ON s.id = d.specialization_id
@@ -79,7 +81,8 @@ class ReviewRepository extends BaseRepository
         $stmt = $this->db->prepare(
             "SELECT r.id, r.rating, r.review_text AS text, r.is_approved, r.created_at,
                     r.admin_reply, r.admin_reply_at,
-                    d.full_name AS doctor_name, s.name AS specialization
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name,
+                    s.name AS specialization
             FROM reviews r
             JOIN doctors d ON d.id = r.doctor_id
             JOIN specializations s ON s.id = d.specialization_id

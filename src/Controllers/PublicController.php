@@ -27,6 +27,8 @@ class PublicController extends BaseController
     {
         $doctors = $this->doctors->getAllWithRating();
 
+        $specializations = $this->statsRepo->getSpecializations();
+
         $stats = [
             'doctors'  => count($doctors),
             'patients' => $this->statsRepo->getPatientCount(),
@@ -38,8 +40,13 @@ class PublicController extends BaseController
             'doctors'         => $doctors,
             'stats'           => $stats,
             'latestReviews'   => $this->statsRepo->getLatestReviews(),
-            'specializations' => $this->statsRepo->getSpecializations(),
+            'specializations' => $specializations,
             'recentArticles'  => $this->articles->getRecent(3),
+            'doctors_count'   => count($doctors),
+            'specs_count'     => count($specializations),
+            'patients_count'  => $stats['patients'],
+            'reviews_count'   => $stats['reviews'],
+            'avg_rating'      => $this->statsRepo->getAverageRating(),
         ]);
     }
 

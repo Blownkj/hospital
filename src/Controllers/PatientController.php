@@ -6,6 +6,7 @@ namespace App\Controllers;
 use App\Core\Logger;
 use App\Core\Session;
 use App\Core\View;
+use App\Core\Validator;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\DoctorRepository;
@@ -101,20 +102,27 @@ class PatientController extends BaseController
         AuthMiddleware::requireRole('patient');
         $this->validateCsrf();
 
-        $patient  = $this->currentPatient();
-        $fullName = trim($_POST['full_name']        ?? '');
-        $phone    = trim($_POST['phone']            ?? '');
-        $address  = trim($_POST['address']          ?? '');
-        $chronic  = trim($_POST['chronic_diseases'] ?? '');
-        $birthDate = trim($_POST['birth_date']      ?? '');
+        $patient    = $this->currentPatient();
+        $lastName   = trim($_POST['last_name']       ?? '');
+        $firstName  = trim($_POST['first_name']      ?? '');
+        $middleName = trim($_POST['middle_name']     ?? '');
+        $phone      = trim($_POST['phone']           ?? '');
+        $address    = trim($_POST['address']         ?? '');
+        $chronic    = trim($_POST['chronic_diseases'] ?? '');
+        $birthDate  = trim($_POST['birth_date']      ?? '');
 
-        if (mb_strlen($fullName) < 2) {
-            Session::setFlash('error', 'Укажите полное имя.');
+        if (mb_strlen($lastName) < 2 || mb_strlen($firstName) < 2) {
+            Session::setFlash('error', 'Укажите фамилию и имя.');
+            AuthMiddleware::redirect('/patient/profile');
+        }
+
+        if ($phone !== '' && !Validator::phone($phone)) {
+            Session::setFlash('error', 'Укажите корректный номер телефона.');
             AuthMiddleware::redirect('/patient/profile');
         }
 
         $this->patients->update(
-            (int)$patient['id'], $fullName, $phone, $address, $chronic, $birthDate
+            (int)$patient['id'], $lastName, $firstName, $middleName ?: null, $phone, $address, $chronic, $birthDate
         );
 
         Session::setFlash('success', 'Профиль обновлён.');

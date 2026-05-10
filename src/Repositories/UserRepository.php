@@ -85,15 +85,17 @@ class UserRepository extends BaseRepository
      * Всё в одной транзакции — или оба INSERT, или ни одного.
      */
     public function createPatient(
-        string $email,
-        string $password,
-        string $fullName,
-        string $birthDate,
-        string $phone,
-        string $gender,
+        string  $email,
+        string  $password,
+        string  $lastName,
+        string  $firstName,
+        ?string $middleName,
+        string  $birthDate,
+        string  $phone,
+        string  $gender,
     ): int {
         return \App\Core\Database::transaction(function () use (
-            $email, $password, $fullName, $birthDate, $phone, $gender
+            $email, $password, $lastName, $firstName, $middleName, $birthDate, $phone, $gender
         ): int {
             $stmt = $this->db->prepare(
                 "INSERT INTO users (email, password_hash, role)
@@ -103,10 +105,10 @@ class UserRepository extends BaseRepository
             $userId = (int) $this->db->lastInsertId();
 
             $stmt = $this->db->prepare(
-                'INSERT INTO patients (user_id, full_name, birth_date, phone, gender)
-                 VALUES (?, ?, ?, ?, ?)'
+                'INSERT INTO patients (user_id, last_name, first_name, middle_name, birth_date, phone, gender)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
-            $stmt->execute([$userId, $fullName, $birthDate, $phone, $gender]);
+            $stmt->execute([$userId, $lastName, $firstName, $middleName, $birthDate, $phone, $gender]);
 
             return $userId;
         });

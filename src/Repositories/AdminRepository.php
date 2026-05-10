@@ -28,8 +28,8 @@ class AdminRepository extends BaseRepository
         }
 
         $sql = "SELECT a.id, a.scheduled_at, a.status, a.appointment_type,
-                       p.full_name AS patient_name, p.phone AS patient_phone,
-                       d.full_name AS doctor_name,
+                       CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name, p.phone AS patient_phone,
+                       CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name,
                        s.name AS specialization
                 FROM appointments a
                 JOIN patients p ON p.id = a.patient_id
@@ -85,8 +85,8 @@ class AdminRepository extends BaseRepository
         }
 
         $sql = "SELECT a.id, a.scheduled_at, a.status, a.appointment_type,
-                       p.full_name AS patient_name, p.phone AS patient_phone,
-                       d.full_name AS doctor_name,
+                       CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name, p.phone AS patient_phone,
+                       CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name,
                        s.name AS specialization
                 FROM appointments a
                 JOIN patients p ON p.id = a.patient_id
@@ -107,7 +107,9 @@ class AdminRepository extends BaseRepository
     public function findAppointmentById(int $id): ?array
     {
         $stmt = $this->db->prepare(
-            "SELECT a.*, p.full_name AS patient_name, d.full_name AS doctor_name
+            "SELECT a.*,
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name
              FROM appointments a
              JOIN patients p ON p.id = a.patient_id
              LEFT JOIN doctors d ON d.id = a.doctor_id
@@ -127,11 +129,13 @@ class AdminRepository extends BaseRepository
     }
 
     public function createDoctor(
-        string $email,
-        string $passwordHash,
-        string $fullName,
-        int    $specializationId,
-        string $bio
+        string  $email,
+        string  $passwordHash,
+        string  $lastName,
+        string  $firstName,
+        ?string $middleName,
+        int     $specializationId,
+        string  $bio
     ): int {
         // 1. Создаём пользователя
         $this->db->prepare(
@@ -143,30 +147,34 @@ class AdminRepository extends BaseRepository
 
         // 2. Создаём профиль врача
         $this->db->prepare(
-            "INSERT INTO doctors (user_id, full_name, specialization_id, bio)
-            VALUES (?, ?, ?, ?)"
-        )->execute([$userId, $fullName, $specializationId, $bio]);
+            "INSERT INTO doctors (user_id, last_name, first_name, middle_name, specialization_id, bio)
+            VALUES (?, ?, ?, ?, ?, ?)"
+        )->execute([$userId, $lastName, $firstName, $middleName, $specializationId, $bio]);
 
         return (int) $this->db->lastInsertId();
     }
 
     public function updateDoctor(
-        int    $doctorId,
-        string $fullName,
-        int    $specializationId,
-        string $bio
+        int     $doctorId,
+        string  $lastName,
+        string  $firstName,
+        ?string $middleName,
+        int     $specializationId,
+        string  $bio
     ): void {
         $this->db->prepare(
             "UPDATE doctors
-            SET full_name = ?, specialization_id = ?, bio = ?
+            SET last_name = ?, first_name = ?, middle_name = ?, specialization_id = ?, bio = ?
             WHERE id = ?"
-        )->execute([$fullName, $specializationId, $bio, $doctorId]);
+        )->execute([$lastName, $firstName, $middleName, $specializationId, $bio, $doctorId]);
     }
 
     public function findDoctorById(int $id): ?array
     {
         $stmt = $this->db->prepare(
-            "SELECT d.*, s.name AS specialization, u.email
+            "SELECT d.*,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS full_name,
+                    s.name AS specialization, u.email
             FROM doctors d
             JOIN specializations s ON s.id = d.specialization_id
             JOIN users u ON u.id = d.user_id
@@ -212,13 +220,15 @@ class AdminRepository extends BaseRepository
     public function getAllDoctors(): array
     {
         $stmt = $this->db->query(
-            "SELECT d.id, d.full_name, d.bio, d.photo_url, d.user_id,
+            "SELECT d.id, d.last_name, d.first_name, d.middle_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS full_name,
+                    d.bio, d.photo_url, d.user_id, d.is_active,
                     s.name AS specialization, s.id AS specialization_id,
                     u.email, u.role
             FROM doctors d
             JOIN specializations s ON s.id = d.specialization_id
             JOIN users u ON u.id = d.user_id
-            ORDER BY d.full_name"
+            ORDER BY d.last_name, d.first_name"
         );
         return $stmt->fetchAll();
     }
@@ -308,11 +318,12 @@ class AdminRepository extends BaseRepository
     public function getTopDoctors(): array
     {
         $stmt = $this->db->query(
-            "SELECT d.full_name, COUNT(a.id) AS cnt
+            "SELECT CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS full_name,
+                    COUNT(a.id) AS cnt
              FROM appointments a
              JOIN doctors d ON d.id = a.doctor_id
              WHERE a.status = 'completed'
-             GROUP BY a.doctor_id, d.full_name
+             GROUP BY a.doctor_id, d.last_name, d.first_name, d.middle_name
              ORDER BY cnt DESC
              LIMIT 5"
         );
@@ -325,8 +336,8 @@ class AdminRepository extends BaseRepository
     {
         $stmt = $this->db->query(
             "SELECT r.id, r.rating, r.review_text AS text, r.created_at,
-                    p.full_name AS patient_name,
-                    d.full_name AS doctor_name
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name
              FROM reviews r
              JOIN patients p ON p.id = r.patient_id
              JOIN doctors d ON d.id = r.doctor_id
@@ -341,8 +352,8 @@ class AdminRepository extends BaseRepository
         $stmt = $this->db->query(
             "SELECT r.id, r.rating, r.review_text AS text, r.created_at,
                     r.admin_reply, r.admin_reply_at,
-                    p.full_name AS patient_name,
-                    d.full_name AS doctor_name
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name
              FROM reviews r
              JOIN patients p ON p.id = r.patient_id
              JOIN doctors d ON d.id = r.doctor_id
@@ -364,8 +375,8 @@ class AdminRepository extends BaseRepository
         $stmt = $this->db->prepare(
             "SELECT r.id, r.rating, r.review_text AS text, r.created_at,
                     r.admin_reply, r.admin_reply_at,
-                    p.full_name AS patient_name,
-                    d.full_name AS doctor_name
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name
              FROM reviews r
              JOIN patients p ON p.id = r.patient_id
              JOIN doctors d ON d.id = r.doctor_id

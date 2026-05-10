@@ -201,9 +201,9 @@ Source of truth: `database/migrations.sql`.
 - Database auto-initialized from `database/migrations.sql`
 
 **Running PHP commands through Docker**:
-- Always prefix with `docker-compose exec php`: `docker-compose exec php php database/seeds.php`
-- Syntax check: `docker-compose exec php php -l src/Core/Router.php`
-- Composer: `docker-compose exec php composer install`
+- Always prefix with `docker-compose exec web`: `docker-compose exec web php database/seeds.php`
+- Syntax check: `docker-compose exec web php -l src/Core/Router.php`
+- Composer: `docker-compose exec web composer install`
 - Do NOT run bare `php` commands; route all through Docker
 
 **Credentials** (from docker-compose.yml):

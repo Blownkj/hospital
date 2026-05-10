@@ -213,40 +213,32 @@ class DoctorController extends BaseController
         AuthMiddleware::redirect('/doctor/appointment/' . $appointmentId);
     }
 
-    // GET /doctor/profile
-public function profile(): void
-{
+    // GET /doctor/history
+    public function history(): void
+    {
+        $doctorId = $this->currentDoctorId();
+        $history  = $this->appointments->getHistoryForDoctor($doctorId);
 
-    $userId  = (int) Session::get('user_id');
-    $profile = $this->service->getDoctorProfile($userId);
-
-    if (!$profile) {
-        die('Профиль не найден.');
+        View::render('doctor/history', [
+            'pageTitle' => 'История приёмов',
+            'history'   => $history,
+        ]);
     }
 
-    View::render('doctor/profile', [
-        'pageTitle' => 'Мой профиль',
-        'profile'   => $profile,
-        'flash'     => Session::getFlash('success'),
-        'error'     => Session::getFlash('error'),
-        'csrf'      => Session::generateCsrfToken(),
-    ]);
-}
-
-    // POST /doctor/profile
-    public function updateProfile(): void
+    // GET /doctor/profile
+    public function profile(): void
     {
-        $this->validateCsrf();
+        $userId  = (int) Session::get('user_id');
+        $profile = $this->service->getDoctorProfile($userId);
 
-        $doctorId = $this->currentDoctorId();
+        if (!$profile) {
+            die('Профиль не найден.');
+        }
 
-        $bio      = trim($_POST['bio']       ?? '');
-        $photoUrl = trim($_POST['photo_url'] ?? '');
-
-        $this->doctorRepo->update($doctorId, $bio, $photoUrl);
-
-        Session::setFlash('success', 'Профиль обновлён.');
-        AuthMiddleware::redirect('/doctor/profile');
+        View::render('doctor/profile', [
+            'pageTitle' => 'Мой профиль',
+            'profile'   => $profile,
+        ]);
     }
 
 }

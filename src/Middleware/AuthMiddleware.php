@@ -14,6 +14,10 @@ class AuthMiddleware
     public static function requireAuth(): void
     {
         if (!Session::has('user_id')) {
+            $uri = $_SERVER['REQUEST_URI'] ?? '';
+            if ($uri !== '' && !str_contains($uri, '/login') && !str_contains($uri, '/logout')) {
+                $_SESSION['auth_return_url'] = $uri;
+            }
             Session::setFlash('error', 'Войдите в систему для доступа.');
             self::redirect('/login');
         }

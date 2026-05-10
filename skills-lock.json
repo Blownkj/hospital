@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "css-modern-features": {
+      "source": "rushenn/css-modern-features",
+      "sourceType": "github",
+      "skillPath": "css-modern-features/SKILL.md",
+      "computedHash": "867d1322887ae8dcfa64d8ee0154a58d1636207b54ae0ce89e4423dd194bb241"
+    }
+  }
+}

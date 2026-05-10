@@ -39,8 +39,9 @@ class DoctorService
     public function getDoctorProfile(int $userId): ?array
     {
         $stmt = $this->db->prepare(
-            "SELECT d.id, d.full_name, d.bio, d.photo_url,
-                    s.name AS specialization
+            "SELECT d.id, d.last_name, d.first_name, d.middle_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS full_name,
+                    d.bio, d.photo_url, s.name AS specialization
              FROM doctors d
              JOIN specializations s ON s.id = d.specialization_id
              WHERE d.user_id = ? LIMIT 1"

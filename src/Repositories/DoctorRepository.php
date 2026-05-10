@@ -15,7 +15,9 @@ class DoctorRepository extends BaseRepository
         return 'SELECT
                     d.id,
                     d.user_id,
-                    d.full_name,
+                    d.last_name,
+                    d.first_name,
+                    d.middle_name,
                     d.bio,
                     d.photo_url,
                     d.is_active,
@@ -35,9 +37,10 @@ class DoctorRepository extends BaseRepository
     {
         $stmt = $this->db->query(
             $this->doctorSelectBase() . '
-            GROUP BY d.id, d.user_id, d.full_name, d.bio, d.photo_url,
+            WHERE d.is_active = 1
+            GROUP BY d.id, d.user_id, d.last_name, d.first_name, d.middle_name, d.bio, d.photo_url,
                      d.is_active, d.specialization_id, s.name, u.email
-            ORDER BY s.name, d.full_name'
+            ORDER BY d.last_name, d.first_name'
         );
         return array_map(
             fn(array $row) => DoctorProfile::fromRow($row),
@@ -51,7 +54,7 @@ class DoctorRepository extends BaseRepository
         $stmt = $this->db->prepare(
             $this->doctorSelectBase() . '
             WHERE d.id = ?
-            GROUP BY d.id, d.user_id, d.full_name, d.bio, d.photo_url,
+            GROUP BY d.id, d.user_id, d.last_name, d.first_name, d.middle_name, d.bio, d.photo_url,
                      d.is_active, d.specialization_id, s.name, u.email
             LIMIT 1'
         );
@@ -64,7 +67,7 @@ class DoctorRepository extends BaseRepository
     {
         $stmt = $this->db->prepare(
             "SELECT r.rating, r.review_text AS text, r.created_at,
-                    p.full_name AS patient_name
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name
              FROM reviews r
              JOIN patients p ON p.id = r.patient_id
              WHERE r.doctor_id = ? AND r.is_approved = 1
@@ -78,12 +81,12 @@ class DoctorRepository extends BaseRepository
     /** Поиск врачей по имени и/или специализации. @return DoctorProfile[] */
     public function search(string $query = '', int $specId = 0, int $limit = 0, int $offset = 0): array
     {
-        $sql = $this->doctorSelectBase() . ' WHERE 1=1';
+        $sql = $this->doctorSelectBase() . ' WHERE d.is_active = 1';
         $params = $this->buildSearchParams($sql, $query, $specId);
 
-        $sql .= ' GROUP BY d.id, d.user_id, d.full_name, d.bio, d.photo_url,
+        $sql .= ' GROUP BY d.id, d.user_id, d.last_name, d.first_name, d.middle_name, d.bio, d.photo_url,
                            d.is_active, d.specialization_id, s.name, u.email
-                  ORDER BY s.name, d.full_name';
+                  ORDER BY d.last_name, d.first_name';
 
         if ($limit > 0) {
             $sql .= ' LIMIT ? OFFSET ?';
@@ -105,7 +108,7 @@ class DoctorRepository extends BaseRepository
         $sql = 'SELECT COUNT(DISTINCT d.id) FROM doctors d
                 JOIN specializations s ON s.id = d.specialization_id
                 JOIN users u           ON u.id = d.user_id
-                WHERE 1=1';
+                WHERE d.is_active = 1';
         $params = $this->buildSearchParams($sql, $query, $specId);
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -116,7 +119,7 @@ class DoctorRepository extends BaseRepository
     {
         $params = [];
         if ($query !== '') {
-            $sql .= ' AND (d.full_name LIKE ? OR s.name LIKE ?)';
+            $sql .= ' AND (CONCAT_WS(\' \', d.last_name, d.first_name, d.middle_name) LIKE ? OR s.name LIKE ?)';
             $params[] = '%' . $query . '%';
             $params[] = '%' . $query . '%';
         }

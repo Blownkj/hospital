@@ -30,9 +30,15 @@ class RateLimitMiddleware
             }
 
             if ($count >= $limit) {
-                $wait = $resetAt > $now ? (int) ceil(($resetAt - $now) / 60) : 1;
+                $wait   = $resetAt > $now ? (int) ceil(($resetAt - $now) / 60) : 1;
                 Session::setFlash('error', "Слишком много попыток. Подождите {$wait} мин.");
-                AuthMiddleware::redirect($_SERVER['HTTP_REFERER'] ?? '/');
+                $ref    = $_SERVER['HTTP_REFERER'] ?? '';
+                $host   = $_SERVER['HTTP_HOST'] ?? '';
+                $parsed = $ref !== '' ? parse_url($ref) : false;
+                $back   = ($parsed && ($parsed['host'] ?? '') === $host)
+                    ? ($parsed['path'] ?? '/')
+                    : '/';
+                AuthMiddleware::redirect($back);
             }
 
             $count++;

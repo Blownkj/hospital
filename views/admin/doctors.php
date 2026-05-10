@@ -72,7 +72,7 @@ $doctors = $doctors ?? [];
                 </thead>
                 <tbody>
                 <?php foreach ($doctors as $d):
-                    $isActive = (($d['role'] ?? '') === 'doctor');
+                    $isActive = (bool)($d['is_active'] ?? 1);
                 ?>
                     <tr>
                         <td>

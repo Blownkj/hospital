@@ -98,8 +98,8 @@ $router->group('/doctor', [$mwDoctor], function (Router $r): void {
     $r->post('/appointment/{id}/protocol',         [DoctorController::class, 'saveProtocol']);
     $r->post('/appointment/{id}/prescription/add', [DoctorController::class, 'addPrescription']);
     $r->post('/appointment/{id}/prescription/delete', [DoctorController::class, 'deletePrescription']);
+    $r->get('/history',                            [DoctorController::class, 'history']);
     $r->get('/profile',                            [DoctorController::class, 'profile']);
-    $r->post('/profile',                           [DoctorController::class, 'updateProfile']);
 });
 
 // ── Администратор ─────────────────────────────────────────────────────────
@@ -107,7 +107,6 @@ $router->group('/admin', [$mwAdmin], function (Router $r): void {
     $r->get('/dashboard',                    [AdminController::class, 'dashboard']);
     $r->get('/appointments',                 [AdminController::class, 'appointments']);
     $r->get('/appointments/export',          [AdminController::class, 'exportCsv']);
-    $r->post('/appointment/{id}/confirm',    [AdminController::class, 'confirmAppointment']);
     $r->post('/appointment/{id}/cancel',     [AdminController::class, 'cancelAppointment']);
     $r->post('/appointment/{id}/reschedule', [AdminController::class, 'rescheduleAppointment']);
     $r->get('/schedule',                     [AdminController::class, 'schedule']);
@@ -143,6 +142,10 @@ try {
         throw $e; // В разработке — показываем полную ошибку
     }
 
-    http_response_code(500);
+    // Preserve 403/419 already set by BaseController; default to 500 only for unhandled errors
+    $code = http_response_code();
+    if ($code === false || $code === 200) {
+        http_response_code(500);
+    }
     View::render('errors/500');
 }

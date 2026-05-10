@@ -9,6 +9,9 @@ final class DoctorProfile
     public function __construct(
         public readonly int     $id,
         public readonly int     $userId,
+        public readonly string  $lastName,
+        public readonly string  $firstName,
+        public readonly ?string $middleName,
         public readonly string  $fullName,
         public readonly string  $email,
         public readonly int     $specializationId,
@@ -22,10 +25,18 @@ final class DoctorProfile
 
     public static function fromRow(array $row): self
     {
+        $lastName   = (string) ($row['last_name']  ?? '');
+        $firstName  = (string) ($row['first_name'] ?? '');
+        $middleName = ($row['middle_name'] ?? null) ?: null;
+        $fullName   = trim($lastName . ' ' . $firstName . ($middleName ? ' ' . $middleName : ''));
+
         return new self(
             id:               (int)    ($row['id']               ?? 0),
             userId:           (int)    ($row['user_id']          ?? 0),
-            fullName:         (string) ($row['full_name']        ?? ''),
+            lastName:         $lastName,
+            firstName:        $firstName,
+            middleName:       $middleName,
+            fullName:         $fullName,
             email:            (string) ($row['email']            ?? ''),
             specializationId: (int)    ($row['specialization_id'] ?? 0),
             specialization:   (string) ($row['specialization']   ?? ''),

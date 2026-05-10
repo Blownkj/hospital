@@ -29,14 +29,12 @@ class AdminController extends BaseController
         $stats      = $this->repo->getStats();
         $byDay      = $this->repo->getAppointmentsByDay();
         $topDoctors = $this->repo->getTopDoctors();
-        $pending    = $this->repo->getAllAppointments('pending');
 
         View::render('admin/dashboard', [
             'pageTitle'  => 'Панель администратора',
             'stats'      => $stats,
             'byDay'      => $byDay,
             'topDoctors' => $topDoctors,
-            'pending'    => $pending,
             'flash'      => Session::getFlash('success'),
             'error'      => Session::getFlash('error'),
         ]);
@@ -68,19 +66,6 @@ class AdminController extends BaseController
             'flash'        => Session::getFlash('success'),
             'error'        => Session::getFlash('error'),
         ]);
-    }
-
-    public function confirmAppointment(string $id): void
-    {
-        $this->validateCsrf();
-
-        $this->repo->updateAppointmentStatus((int) $id, 'confirmed');
-        Logger::get()->info('Admin confirmed appointment', [
-            'admin_id'       => Session::get('user_id'),
-            'appointment_id' => (int) $id,
-        ]);
-        Session::setFlash('success', 'Запись подтверждена.');
-        AuthMiddleware::redirect('/admin/appointments');
     }
 
     public function cancelAppointment(string $id): void
@@ -508,14 +493,16 @@ class AdminController extends BaseController
     {
         $this->validateCsrf();
 
-        $email    = trim($_POST['email']      ?? '');
-        $password = trim($_POST['password']   ?? '');
-        $name     = trim($_POST['full_name']  ?? '');
-        $specId   = (int) ($_POST['specialization_id'] ?? 0);
-        $bio      = trim($_POST['bio']        ?? '');
+        $email      = trim($_POST['email']      ?? '');
+        $password   = trim($_POST['password']   ?? '');
+        $lastName   = trim($_POST['last_name']   ?? '');
+        $firstName  = trim($_POST['first_name']  ?? '');
+        $middleName = trim($_POST['middle_name'] ?? '');
+        $specId     = (int) ($_POST['specialization_id'] ?? 0);
+        $bio        = trim($_POST['bio']        ?? '');
 
         // Валидация
-        if (!$email || !$password || !$name || !$specId) {
+        if (!$email || !$password || !$lastName || !$firstName || !$specId) {
             Session::setFlash('error', 'Заполните все обязательные поля.');
             AuthMiddleware::redirect('/admin/doctors/create');
         }
@@ -536,8 +523,8 @@ class AdminController extends BaseController
             AuthMiddleware::redirect('/admin/doctors/create');
         }
 
-        $hash = password_hash($password, PASSWORD_BCRYPT);
-        $this->repo->createDoctor($email, $hash, $name, $specId, $bio);
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $this->repo->createDoctor($email, $hash, $lastName, $firstName, $middleName ?: null, $specId, $bio);
 
         Session::setFlash('success', 'Врач добавлен. Логин: ' . $email);
         AuthMiddleware::redirect('/admin/doctors');
@@ -569,17 +556,19 @@ class AdminController extends BaseController
     {
         $this->validateCsrf();
 
-        $doctorId = (int) $id;
-        $name     = trim($_POST['full_name']           ?? '');
-        $specId   = (int) ($_POST['specialization_id'] ?? 0);
-        $bio      = trim($_POST['bio']                 ?? '');
+        $doctorId   = (int) $id;
+        $lastName   = trim($_POST['last_name']          ?? '');
+        $firstName  = trim($_POST['first_name']         ?? '');
+        $middleName = trim($_POST['middle_name']        ?? '');
+        $specId     = (int) ($_POST['specialization_id'] ?? 0);
+        $bio        = trim($_POST['bio']                ?? '');
 
-        if (!$name || !$specId) {
+        if (!$lastName || !$firstName || !$specId) {
             Session::setFlash('error', 'Заполните обязательные поля.');
             AuthMiddleware::redirect('/admin/doctors/' . $doctorId . '/edit');
         }
 
-        $this->repo->updateDoctor($doctorId, $name, $specId, $bio);
+        $this->repo->updateDoctor($doctorId, $lastName, $firstName, $middleName ?: null, $specId, $bio);
 
         Session::setFlash('success', 'Данные врача обновлены.');
         AuthMiddleware::redirect('/admin/doctors');

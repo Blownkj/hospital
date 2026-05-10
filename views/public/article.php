@@ -52,9 +52,8 @@ $catIconMap = [
     <!-- Тело статьи -->
     <div class="article-body">
         <?php
-        // TODO P0.6: install ezyang/htmlpurifier and sanitize here.
-        // Body is currently admin/seed-only HTML, no user-controlled input path exists.
-        echo $article['body'];
+        $purifier = new \HTMLPurifier(\HTMLPurifier_Config::createDefault());
+        echo $purifier->purify($article['body']);
         ?>
     </div>
 

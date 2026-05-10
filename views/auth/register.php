@@ -31,13 +31,30 @@ require ROOT_PATH . '/views/layout/header.php';
     </div>
 
     <div class="form__group">
-        <label class="form__label form__label--required" for="full_name">Полное имя</label>
-        <input class="form__control" type="text" id="full_name" name="full_name"
-               required placeholder="Иванов Иван Иванович"
-               value="<?= View::e($old['full_name'] ?? '') ?>">
-        <?php if (!empty($errors['full_name'])): ?>
-            <div class="form__error"><?= View::e($errors['full_name']) ?></div>
+        <label class="form__label form__label--required" for="last_name">Фамилия</label>
+        <input class="form__control" type="text" id="last_name" name="last_name"
+               required placeholder="Иванов"
+               value="<?= View::e($old['last_name'] ?? '') ?>">
+        <?php if (!empty($errors['last_name'])): ?>
+            <div class="form__error"><?= View::e($errors['last_name']) ?></div>
         <?php endif; ?>
+    </div>
+
+    <div class="form__group">
+        <label class="form__label form__label--required" for="first_name">Имя</label>
+        <input class="form__control" type="text" id="first_name" name="first_name"
+               required placeholder="Иван"
+               value="<?= View::e($old['first_name'] ?? '') ?>">
+        <?php if (!empty($errors['first_name'])): ?>
+            <div class="form__error"><?= View::e($errors['first_name']) ?></div>
+        <?php endif; ?>
+    </div>
+
+    <div class="form__group">
+        <label class="form__label" for="middle_name">Отчество</label>
+        <input class="form__control" type="text" id="middle_name" name="middle_name"
+               placeholder="Иванович"
+               value="<?= View::e($old['middle_name'] ?? '') ?>">
     </div>
 
     <div class="form__group">

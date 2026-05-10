@@ -16,7 +16,9 @@ class PatientRepository extends BaseRepository
     public function findByUserId(int $userId): ?array
     {
         $stmt = $this->db->prepare(
-            'SELECT p.*, u.email
+            'SELECT p.*,
+                    CONCAT_WS(\' \', p.last_name, p.first_name, p.middle_name) AS full_name,
+                    u.email
              FROM patients p
              JOIN users u ON u.id = p.user_id
              WHERE p.user_id = ?
@@ -38,14 +40,14 @@ class PatientRepository extends BaseRepository
         $stmt->execute([$text, $patientId]);
     }
 
-    public function update(int $patientId, string $fullName, string $phone, string $address, string $chronicDiseases, string $birthDate): void
+    public function update(int $patientId, string $lastName, string $firstName, ?string $middleName, string $phone, string $address, string $chronicDiseases, string $birthDate): void
     {
         $stmt = $this->db->prepare(
             "UPDATE patients
-             SET full_name = ?, phone = ?, address = ?,
+             SET last_name = ?, first_name = ?, middle_name = ?, phone = ?, address = ?,
                  chronic_diseases = ?, birth_date = ?
              WHERE id = ?"
         );
-        $stmt->execute([$fullName, $phone, $address, $chronicDiseases, $birthDate, $patientId]);
+        $stmt->execute([$lastName, $firstName, $middleName, $phone, $address, $chronicDiseases, $birthDate, $patientId]);
     }
 }

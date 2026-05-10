@@ -10,8 +10,21 @@ class StatisticsRepository extends BaseRepository
     public function getSpecializations(): array
     {
         return $this->db
-            ->query("SELECT id, name, description FROM specializations ORDER BY name")
+            ->query("SELECT s.id, s.name, s.description,
+                            COUNT(d.id) AS doctors_count
+                     FROM specializations s
+                     LEFT JOIN doctors d ON d.specialization_id = s.id AND d.is_active = 1
+                     GROUP BY s.id, s.name, s.description
+                     ORDER BY s.name")
             ->fetchAll();
+    }
+
+    public function getAverageRating(): float
+    {
+        $val = $this->db
+            ->query("SELECT ROUND(AVG(rating), 1) FROM reviews WHERE is_approved = 1")
+            ->fetchColumn();
+        return $val !== false ? (float)$val : 0.0;
     }
 
     public function getPatientCount(): int
@@ -32,8 +45,8 @@ class StatisticsRepository extends BaseRepository
     {
         $stmt = $this->db->prepare(
             "SELECT r.rating, r.review_text AS text, r.created_at,
-                    p.full_name AS patient_name,
-                    d.full_name AS doctor_name,
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name,
                     s.name AS specialization
              FROM reviews r
              JOIN patients p ON p.id = r.patient_id

@@ -92,34 +92,14 @@ $statusLabels = [
                 <td><?php include ROOT_PATH . '/views/partials/status-badge.php'; ?></td>
                 <td class="td-right">
                     <div class="u-flex u-gap-1 u-flex-wrap u-jc-end">
-                    <?php if ($a['status'] === 'pending'): ?>
-                        <form method="POST" action="<?= BASE_URL ?>/admin/appointment/<?= (int)$a['id'] ?>/confirm">
-                            <input type="hidden" name="csrf_token" value="<?= View::e($csrf) ?>">
-                            <button class="btn btn--primary btn--sm" title="Подтвердить">
-                                <?php icon('check', 13) ?>
-                            </button>
-                        </form>
-                    <?php endif; ?>
-                    <?php if (in_array($a['status'], ['pending','confirmed'])): ?>
+                    <?php if (in_array($a['status'], ['pending','confirmed','in_progress'])): ?>
                         <form method="POST" action="<?= BASE_URL ?>/admin/appointment/<?= (int)$a['id'] ?>/cancel"
-                              onsubmit="return confirm('Отменить запись?')">
+                              data-confirm="Отменить запись?">
                             <input type="hidden" name="csrf_token" value="<?= View::e($csrf) ?>">
                             <button class="btn btn--danger btn--sm" title="Отменить">
-                                <?php icon('x', 13) ?>
+                                <?php icon('x', 13) ?> Отменить
                             </button>
                         </form>
-                        <button class="btn btn--ghost btn--sm" title="Перенести"
-                                onclick="toggleReschedule(<?= (int)$a['id'] ?>)">
-                            <?php icon('calendar', 13) ?>
-                        </button>
-                        <div id="rs-<?= (int)$a['id'] ?>" class="u-hidden rs-form">
-                            <form method="POST" action="<?= BASE_URL ?>/admin/appointment/<?= (int)$a['id'] ?>/reschedule"
-                                  class="u-flex u-gap-2 u-ai-center">
-                                <input type="hidden" name="csrf_token" value="<?= View::e($csrf) ?>">
-                                <input class="form__control u-text-xs" type="datetime-local" name="new_datetime" required>
-                                <button class="btn btn--primary btn--sm">OK</button>
-                            </form>
-                        </div>
                     <?php endif; ?>
                     </div>
                 </td>
@@ -163,12 +143,5 @@ $statusLabels = [
     </nav>
 </div>
 <?php endif; ?>
-
-<script>
-function toggleReschedule(id) {
-    const el = document.getElementById('rs-' + id);
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-</script>
 
 <?php require ROOT_PATH . '/views/layout/public_footer.php'; ?>

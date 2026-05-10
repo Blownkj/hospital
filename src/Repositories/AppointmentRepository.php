@@ -89,7 +89,7 @@ class AppointmentRepository extends BaseRepository
         $stmt = $this->db->prepare(
             "INSERT INTO appointments
                 (patient_id, appointment_type, doctor_id, lab_test_id, scheduled_at, status)
-             VALUES (?, 'doctor', ?, NULL, ?, 'pending')"
+             VALUES (?, 'doctor', ?, NULL, ?, 'confirmed')"
         );
         $stmt->execute([$patientId, $doctorId, $scheduledAt]);
         return (int)$this->db->lastInsertId();
@@ -108,7 +108,7 @@ class AppointmentRepository extends BaseRepository
                 a.scheduled_at,
                 a.status,
                 COALESCE(a.appointment_type, 'doctor') AS appointment_type,
-                d.full_name AS doctor_name,
+                CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name,
                 COALESCE(s.name, lt.category, 'Лаборатория') AS specialization,
                 lt.name AS lab_test_name
              FROM appointments a
@@ -133,9 +133,9 @@ class AppointmentRepository extends BaseRepository
                     a.status,
                     a.appointment_type,
                     a.created_at,
-                    COALESCE(p.full_name, '—')  AS patient_name,
+                    COALESCE(CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name), '—') AS patient_name,
                     p.phone                      AS patient_phone,
-                    COALESCE(d.full_name, '—')  AS doctor_name,
+                    COALESCE(CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name), '—') AS doctor_name,
                     COALESCE(s.name, 'Анализ')  AS specialization,
                     COALESCE(lt.name, '—')      AS lab_test_name
                 FROM appointments a
@@ -216,7 +216,7 @@ class AppointmentRepository extends BaseRepository
     {
         $stmt = $this->db->prepare(
             "SELECT a.id, a.scheduled_at, a.status,
-                    p.full_name AS patient_name,
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
                     p.phone AS patient_phone,
                     p.birth_date AS patient_birth_date,
                     p.chronic_diseases
@@ -235,7 +235,8 @@ class AppointmentRepository extends BaseRepository
     public function findByIdWithPatient(int $appointmentId, ?int $doctorId = null): ?array
     {
         $sql = "SELECT a.id, a.scheduled_at, a.status, a.doctor_id,
-                    p.id AS patient_id, p.full_name AS patient_name,
+                    p.id AS patient_id,
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
                     p.birth_date AS patient_birth_date,
                     p.phone AS patient_phone, p.gender,
                     p.address, p.chronic_diseases,
@@ -263,7 +264,7 @@ class AppointmentRepository extends BaseRepository
     {
         $stmt = $this->db->prepare(
             "SELECT a.id, a.scheduled_at,
-                    d.full_name AS doctor_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name,
                     s.name AS specialization,
                     v.diagnosis, v.started_at, v.ended_at
              FROM appointments a
@@ -291,12 +292,30 @@ class AppointmentRepository extends BaseRepository
         $stmt->execute([$status, $appointmentId]);
     }
 
+    /** Полная история завершённых приёмов врача (для страницы /doctor/history) */
+    public function getHistoryForDoctor(int $doctorId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT a.id, a.scheduled_at, a.status,
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
+                    v.diagnosis
+             FROM appointments a
+             JOIN patients p ON p.id = a.patient_id
+             LEFT JOIN visits v ON v.appointment_id = a.id
+             WHERE a.doctor_id = ?
+               AND a.status = 'completed'
+             ORDER BY a.scheduled_at DESC"
+        );
+        $stmt->execute([$doctorId]);
+        return $stmt->fetchAll();
+    }
+
     /** Приёмы врача за последние 30 дней (история) */
     public function getRecentForDoctor(int $doctorId, int $limit = 30): array
     {
         $stmt = $this->db->prepare(
             "SELECT a.id, a.scheduled_at, a.status,
-                    p.full_name AS patient_name,
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
                     v.diagnosis
              FROM appointments a
              JOIN patients p ON p.id = a.patient_id

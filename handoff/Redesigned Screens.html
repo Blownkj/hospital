@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Hospital — Redesigned Screens v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+:root{
+  --font-sans: "Inter Tight", -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --ink-900:#0E1116; --ink-700:#2B313A; --ink-500:#5A6472;
+  --ink-400:#8A93A0; --ink-300:#B6BCC5;
+  --ink-200:#E4E7EC; --ink-100:#EFF1F4; --ink-050:#F7F8FA; --paper:#FFFFFF;
+  --ok-600:#2F7D5A; --ok-050:#EBF4EE;
+  --warn-600:#B5751B; --warn-050:#FAF1E2;
+  --err-600:#B33A3A; --err-050:#F8EAEA;
+  --info-600:#2B5BB5; --info-050:#E8EEF8;
+  --line:1px solid var(--ink-200);
+  --r-xs:4px; --r-sm:6px; --r-md:8px; --r-lg:12px; --r-pill:999px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:15px;line-height:1.5;color:var(--ink-900);background:#fff;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:inherit;text-decoration:none}
+img,svg{display:block;max-width:100%}
+input,textarea,select{font:inherit;color:inherit}
+ul,ol{list-style:none}
+h1,h2,h3,h4,h5,h6{font-weight:inherit;line-height:1.2;color:inherit}
+
+/* ============ Shared component classes (scoped per artboard) ============ */
+.scr{
+  width:100%; height:100%;
+  background: var(--ink-050);
+  font-family: var(--font-sans);
+  color: var(--ink-900);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* Top app bar (in-product) */
+.appbar{
+  display:flex; align-items:center; gap:24px;
+  height:56px; padding:0 24px;
+  background: var(--paper);
+  border-bottom: var(--line);
+}
+.appbar__brand{ display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; letter-spacing:-.005em;}
+.appbar__brand-mark{ width:24px; height:24px; border-radius:4px; background: var(--ink-900); color:#fff; display:grid; place-items:center; font-family: var(--font-serif); font-size:14px; line-height:1;}
+.appbar__nav{ display:flex; gap:2px; margin-left:8px;}
+.appbar__nav a{ padding:6px 10px; border-radius:6px; font-size:13px; color: var(--ink-500); font-weight:500;}
+.appbar__nav a.is-active{ color: var(--ink-900); background: var(--ink-100);}
+.appbar__nav a:hover{ color: var(--ink-900);}
+.appbar__spacer{ flex:1;}
+.appbar__search{
+  display:flex; align-items:center; gap:8px;
+  height:32px; padding:0 10px;
+  background: var(--ink-100); border:1px solid transparent;
+  border-radius:6px; font-size:13px; color: var(--ink-500);
+  width: 240px;
+}
+.appbar__search svg{ flex-shrink:0;}
+.appbar__icon{ width:32px; height:32px; display:grid; place-items:center; border-radius:6px; color: var(--ink-500);}
+.appbar__icon:hover{ background: var(--ink-100); color: var(--ink-900);}
+.appbar__avatar{
+  display:flex; align-items:center; gap:8px;
+  padding:4px 10px 4px 4px; border-radius: var(--r-pill); border: var(--line);
+  font-size:13px; font-weight:500;
+}
+.appbar__avatar-circ{ width:24px; height:24px; border-radius:50%; background: var(--ink-900); color:#fff; display:grid; place-items:center; font-size:11px; font-weight:600;}
+
+/* Public top bar (marketing) */
+.tophead{
+  display:flex; align-items:center; gap:32px;
+  height:64px; padding:0 32px;
+  background: var(--paper);
+  border-bottom: var(--line);
+}
+.tophead__brand{ display:flex; align-items:center; gap:10px; font-family: var(--font-serif); font-size:22px; line-height:1;}
+.tophead__brand-mark{ width:28px; height:28px; border-radius:4px; background: var(--ink-900); color:#fff; display:grid; place-items:center; font-family: var(--font-serif); font-size:16px; line-height:1;}
+.tophead__nav{ display:flex; gap:4px; }
+.tophead__nav a{ padding:8px 14px; font-size:14px; color: var(--ink-500); font-weight:500; border-radius:6px;}
+.tophead__nav a.is-active{ color: var(--ink-900);}
+.tophead__nav a:hover{ color: var(--ink-900);}
+.tophead__spacer{ flex:1;}
+
+/* Buttons */
+.btn{ display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 14px; border-radius:6px; font-size:14px; font-weight:500; border:1px solid transparent; transition: background .12s ease, border-color .12s ease; white-space:nowrap;}
+.btn--primary{ background: var(--ink-900); color:#fff; border-color: var(--ink-900);}
+.btn--primary:hover{ background: var(--ink-700); border-color: var(--ink-700);}
+.btn--secondary{ background: var(--paper); color: var(--ink-900); border-color: var(--ink-200);}
+.btn--secondary:hover{ background: var(--ink-100);}
+.btn--ghost{ background: transparent; color: var(--ink-700);}
+.btn--ghost:hover{ background: var(--ink-100); color: var(--ink-900);}
+.btn--sm{ height: 28px; padding: 0 10px; font-size: 13px;}
+.btn--lg{ height: 44px; padding: 0 18px; font-size: 15px;}
+.btn--block{ width:100%; justify-content:center;}
+
+/* Badges */
+.badge{ display:inline-flex; align-items:center; gap:6px; height:22px; padding:0 8px; border-radius:6px; font-size:12px; font-weight:500; border:1px solid; background: var(--paper); white-space:nowrap;}
+.badge .d{ width:6px; height:6px; border-radius:50%;}
+.badge--ok{ color: var(--ok-600); border-color:#cfe1d6; background: var(--ok-050);} .badge--ok .d{background:var(--ok-600);}
+.badge--warn{ color: var(--warn-600); border-color:#ecd9b8; background: var(--warn-050);} .badge--warn .d{background:var(--warn-600);}
+.badge--err{ color: var(--err-600); border-color:#e4c4c4; background: var(--err-050);} .badge--err .d{background:var(--err-600);}
+.badge--info{ color: var(--info-600); border-color:#cdd9ee; background: var(--info-050);} .badge--info .d{background:var(--info-600);}
+.badge--neutral{ color: var(--ink-700); border-color: var(--ink-200); background: var(--ink-100);} .badge--neutral .d{background:var(--ink-500);}
+
+/* Page containers */
+.page-pad{ padding: 28px 32px; flex:1; overflow: auto;}
+.page-head{ display:flex; align-items:end; justify-content: space-between; gap:16px; padding-bottom: 20px; border-bottom: var(--line); margin-bottom: 24px;}
+.page-head__eyebrow{ font-family: var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform: uppercase; color: var(--ink-500); margin-bottom:6px; display:flex; align-items:center; gap:8px;}
+.page-head__eyebrow .dot{ width:5px; height:5px; border-radius:50%; background: var(--ok-600);}
+.page-head__title{ font-family: var(--font-serif); font-size: 40px; line-height:1.05; letter-spacing:-.02em; font-weight:400;}
+.page-head__title em{ font-style: italic; color: var(--ink-500);}
+.page-head__sub{ font-size:14px; color: var(--ink-500); margin-top:6px; max-width: 60ch;}
+.page-head__actions{ display:flex; gap:8px; flex-shrink: 0;}
+
+/* KPI row */
+.kpi-row{ display:grid; grid-template-columns: repeat(4,1fr); border: var(--line); border-radius: 8px; overflow:hidden; background: var(--paper); margin-bottom: 24px;}
+.kpi{ padding: 18px 20px; border-right: var(--line); display:flex; flex-direction:column; gap:8px;}
+.kpi:last-child{ border-right:none;}
+.kpi__label{ font-family: var(--font-mono); font-size:11px; color: var(--ink-500); text-transform: uppercase; letter-spacing:.04em;}
+.kpi__value{ font-family: var(--font-serif); font-size: 40px; font-weight:400; line-height:1; letter-spacing:-.02em; display:flex; align-items: baseline; gap: 8px;}
+.kpi__delta{ font-family: var(--font-mono); font-size:12px; color: var(--ok-600);}
+.kpi__delta--down{ color: var(--err-600);}
+.kpi__sub{ font-size:12px; color: var(--ink-500);}
+.kpi__spark{ height: 28px; margin-top: 2px;}
+
+/* Card */
+.card{ background: var(--paper); border: var(--line); border-radius: 8px; overflow: hidden;}
+.card__head{ padding: 14px 18px; border-bottom: var(--line); display:flex; align-items:center; justify-content: space-between; gap: 12px;}
+.card__head h3{ font-size: 14px; font-weight: 600; letter-spacing: -.005em;}
+.card__head .meta{ font-family: var(--font-mono); font-size: 12px; color: var(--ink-500);}
+.card__body{ padding: 18px;}
+.card__foot{ padding: 12px 18px; border-top: var(--line); display:flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--ink-500);}
+
+/* Table */
+.tbl{ width: 100%; border-collapse: collapse; font-size: 13px;}
+.tbl th{ text-align: left; padding: 10px 18px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-500); background: var(--ink-050); border-bottom: var(--line); white-space: nowrap;}
+.tbl td{ padding: 14px 18px; border-bottom: var(--line); vertical-align: middle;}
+.tbl tr:last-child td{ border-bottom: none;}
+.tbl tr:hover td{ background: var(--ink-050);}
+.tbl .name{ font-weight: 500;}
+.tbl .muted{ color: var(--ink-500);}
+.tbl .mono{ font-family: var(--font-mono); font-size: 12px; color: var(--ink-700);}
+
+/* Avatar */
+.avatar{ width:32px; height:32px; border-radius:50%; background: var(--ink-100); color: var(--ink-700); display:grid; place-items:center; font-size:12px; font-weight:600; flex-shrink:0;}
+.avatar--lg{ width:48px; height:48px; font-size:14px;}
+.avatar--xl{ width:64px; height:64px; font-size:18px;}
+
+/* Form field */
+.field{ display:flex; flex-direction:column; gap:6px;}
+.field__label{ font-size:13px; font-weight:500; color: var(--ink-700);}
+.input{ height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--ink-200); background: var(--paper); font-size: 14px;}
+.input::placeholder{ color: var(--ink-400);}
+.input:focus{ outline:none; border-color: var(--ink-900); box-shadow: 0 0 0 3px rgba(14,17,22,.08);}
+.field__hint{ font-size:12px; color: var(--ink-500);}
+
+/* Eyebrow utility */
+.eyebrow{ font-family: var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform: uppercase; color: var(--ink-500);}
+
+/* === Login screen === */
+.login-stage{
+  flex:1; display:grid; grid-template-columns: 1.1fr 1fr; background: var(--paper);
+}
+.login-stage__art{
+  background: var(--ink-900); color: #fff;
+  padding: 40px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  position: relative; overflow: hidden;
+}
+.login-stage__art::after{
+  content:""; position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.06) 1px, transparent 0);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+.login-stage__art-top{ display:flex; align-items:center; gap:10px; font-family: var(--font-serif); font-size:24px; position: relative; z-index:1;}
+.login-stage__art-top-mark{ width:28px; height:28px; border-radius:4px; background:#fff; color: var(--ink-900); display:grid; place-items:center; font-family: var(--font-serif); font-size:16px; line-height:1;}
+.login-stage__art-quote{ font-family: var(--font-serif); font-size: 36px; line-height: 1.15; letter-spacing:-.015em; max-width: 420px; position:relative; z-index:1;}
+.login-stage__art-quote em{ font-style: italic; color: rgba(255,255,255,.7);}
+.login-stage__art-meta{ font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,.5); display:flex; gap: 16px; position:relative; z-index:1;}
+.login-stage__art-meta b{ color: #fff; font-weight: 500;}
+
+.login-form{ display:flex; flex-direction:column; justify-content:center; padding: 40px 56px; gap:8px;}
+.login-form__eyebrow{ font-family: var(--font-mono); font-size: 11px; letter-spacing:.06em; text-transform: uppercase; color: var(--ink-500); margin-bottom: 4px;}
+.login-form__title{ font-family: var(--font-serif); font-size: 36px; line-height: 1.1; letter-spacing:-.015em; font-weight: 400; margin-bottom: 4px;}
+.login-form__sub{ font-size: 14px; color: var(--ink-500); margin-bottom: 20px;}
+.login-form .field{ margin-bottom: 14px;}
+.login-form__row{ display:flex; align-items:center; justify-content: space-between; margin: 4px 0 16px; font-size: 13px;}
+.login-form__row label{ display:flex; align-items:center; gap:6px; color: var(--ink-700);}
+.login-form__row a{ color: var(--ink-900); text-decoration: underline; text-underline-offset: 2px;}
+.login-form .btn{ height: 40px;}
+.login-form__divider{ display:flex; align-items:center; gap:12px; margin: 20px 0; color: var(--ink-400); font-family: var(--font-mono); font-size: 11px;}
+.login-form__divider::before, .login-form__divider::after{ content:""; flex:1; height: 1px; background: var(--ink-200);}
+.login-form__sso{ display:flex; gap: 8px;}
+.login-form__sso .btn--secondary{ flex: 1; justify-content: center;}
+.login-form__foot{ margin-top: 28px; font-size: 12px; color: var(--ink-500);}
+.login-form__foot a{ color: var(--ink-900); text-decoration: underline; text-underline-offset: 2px;}
+
+/* === Dashboard === */
+.dash-grid{ display:grid; grid-template-columns: 2fr 1fr; gap: 16px;}
+.appt-row{ display:grid; grid-template-columns: 64px 1fr auto auto; gap:14px; padding: 14px 18px; border-bottom: var(--line); align-items: center;}
+.appt-row:last-child{ border-bottom: none;}
+.appt-time{ font-family: var(--font-mono); font-size: 13px;}
+.appt-time small{ display:block; color: var(--ink-500); font-size: 11px; margin-top: 2px;}
+.appt-info__name{ font-weight: 500; font-size: 14px; margin-bottom: 2px;}
+.appt-info__meta{ font-size: 12px; color: var(--ink-500);}
+
+.list-empty{ padding: 36px 18px; text-align: center; color: var(--ink-500); font-size: 13px;}
+
+.activity{ padding: 0;}
+.activity__item{ display:grid; grid-template-columns: 12px 1fr auto; gap: 12px; padding: 14px 18px; border-bottom: var(--line); align-items: start;}
+.activity__item:last-child{ border-bottom: none;}
+.activity__dot{ width:8px; height:8px; border-radius:50%; margin-top: 6px; background: var(--ink-300);}
+.activity__dot--ok{ background: var(--ok-600);}
+.activity__dot--warn{ background: var(--warn-600);}
+.activity__dot--info{ background: var(--info-600);}
+.activity__title{ font-size: 13px; line-height: 1.45;}
+.activity__title b{ font-weight: 500;}
+.activity__time{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); white-space: nowrap;}
+
+/* === Doctors list === */
+.filters{ display:flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;}
+.chip{ display:inline-flex; align-items:center; gap:6px; padding: 6px 12px; border-radius: var(--r-pill); border: var(--line); font-size: 13px; color: var(--ink-700); background: var(--paper);}
+.chip.is-active{ background: var(--ink-900); color: #fff; border-color: var(--ink-900);}
+.chip .count{ color: var(--ink-400); font-family: var(--font-mono); font-size: 11px;}
+.chip.is-active .count{ color: rgba(255,255,255,.6);}
+
+.doc-list{ background: var(--paper); border: var(--line); border-radius: 8px; overflow: hidden;}
+.doc-row{
+  display:grid; grid-template-columns: 56px 2fr 1.4fr 1fr 1fr auto; gap: 18px;
+  padding: 18px 20px; border-bottom: var(--line); align-items: center;
+}
+.doc-row:last-child{ border-bottom: none;}
+.doc-row:hover{ background: var(--ink-050);}
+.doc-row__avatar{ width: 48px; height: 48px; border-radius: 6px; background: var(--ink-100); color: var(--ink-700); display:grid; place-items: center; font-family: var(--font-serif); font-size: 22px;}
+.doc-row__name{ font-weight: 500; font-size: 14px;}
+.doc-row__spec{ font-size: 12px; color: var(--ink-500); margin-top: 2px;}
+.doc-row__rating{ display:flex; align-items: center; gap: 6px; font-size: 13px;}
+.doc-row__rating-star{ color: #B5751B;}
+.doc-row__rating .count{ color: var(--ink-500); font-family: var(--font-mono); font-size: 11px;}
+.doc-row__cell-label{ font-family: var(--font-mono); font-size: 10px; color: var(--ink-400); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px;}
+.doc-row__cell-val{ font-size: 13px;}
+
+/* === Doctor detail === */
+.det-head{ display:grid; grid-template-columns: 96px 1fr auto; gap: 24px; align-items: start; padding: 28px; background: var(--paper); border: var(--line); border-radius: 8px; margin-bottom: 16px;}
+.det-head__avatar{ width: 96px; height: 96px; border-radius: 8px; background: var(--ink-100); display:grid; place-items: center; font-family: var(--font-serif); font-size: 40px; color: var(--ink-700);}
+.det-head__name{ font-family: var(--font-serif); font-size: 32px; line-height: 1.1; letter-spacing: -.015em; font-weight: 400; margin-bottom: 4px;}
+.det-head__spec{ font-size: 14px; color: var(--ink-500); margin-bottom: 12px;}
+.det-head__meta{ display:flex; gap: 24px; font-size: 13px; color: var(--ink-700);}
+.det-head__meta div b{ font-weight: 500;}
+.det-head__meta div span{ display:block; font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px;}
+
+.det-body{ display:grid; grid-template-columns: 2fr 1fr; gap: 16px;}
+.tabs{ display:flex; gap: 0; border-bottom: var(--line); margin-bottom: 0;}
+.tabs button{ padding: 10px 16px; font-size: 13px; font-weight: 500; color: var(--ink-500); border-bottom: 2px solid transparent; margin-bottom: -1px;}
+.tabs button.is-active{ color: var(--ink-900); border-bottom-color: var(--ink-900);}
+
+.schedule{ display:grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--ink-200); border: var(--line); border-radius: 6px; overflow: hidden;}
+.schedule__day{ background: var(--paper); padding: 10px 8px; text-align: center; font-size: 12px;}
+.schedule__day.off{ background: var(--ink-050); color: var(--ink-400);}
+.schedule__day-name{ font-weight: 600; margin-bottom: 4px;}
+.schedule__day-time{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-500);}
+
+.review{ padding: 16px 18px; border-bottom: var(--line);}
+.review:last-child{ border-bottom: none;}
+.review__head{ display:flex; align-items:center; gap: 10px; margin-bottom: 8px;}
+.review__author{ font-size: 13px; font-weight: 500;}
+.review__date{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); margin-left: auto;}
+.review__text{ font-size: 13px; color: var(--ink-700); line-height: 1.55;}
+.stars{ display:flex; gap: 1px; color: #B5751B; font-size: 12px;}
+
+/* === Public homepage === */
+.public-hero{
+  background: var(--paper);
+  padding: 64px 48px 56px;
+  border-bottom: var(--line);
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 48px;
+  align-items: end;
+}
+.public-hero__title{ font-family: var(--font-serif); font-size: 64px; line-height: 1.02; letter-spacing: -.025em; font-weight: 400;}
+.public-hero__title em{ font-style: italic; color: var(--ink-500);}
+.public-hero__lead{ font-size: 16px; color: var(--ink-500); margin-top: 16px; max-width: 56ch;}
+.public-hero__cta{ display:flex; gap: 8px; margin-top: 24px;}
+.public-hero__panel{ background: var(--ink-050); border: var(--line); border-radius: 8px; padding: 20px;}
+.public-hero__panel h4{ font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em; color: var(--ink-500); margin-bottom: 14px;}
+.public-hero__quick{ display:flex; flex-direction: column; gap: 10px;}
+.public-hero__quick label{ font-size: 12px; font-weight: 500; color: var(--ink-700); text-transform: none; letter-spacing: 0; font-family: var(--font-sans);}
+.public-hero__quick select, .public-hero__quick input{ height: 36px; border-radius: 6px; border: 1px solid var(--ink-200); padding: 0 10px; font-size: 13px; background: var(--paper);}
+.public-meta-row{
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--paper); border-bottom: var(--line);
+}
+.public-meta{ padding: 20px 32px; border-right: var(--line);}
+.public-meta:last-child{ border-right: none;}
+.public-meta__label{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); text-transform: uppercase; letter-spacing: .04em;}
+.public-meta__value{ font-family: var(--font-serif); font-size: 32px; line-height: 1.1; letter-spacing: -.02em; margin-top: 4px;}
+
+.public-section{ padding: 48px 48px 16px;}
+.public-section__head{ display:flex; align-items: end; justify-content: space-between; margin-bottom: 24px; padding-bottom: 12px; border-bottom: var(--line);}
+.public-section__title{ font-family: var(--font-serif); font-size: 32px; line-height: 1.1; letter-spacing: -.015em;}
+.public-section__title em{ font-style: italic; color: var(--ink-500);}
+.public-section__more{ font-size: 13px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px;}
+
+.spec-list{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: var(--line); border-radius: 8px; overflow: hidden; background: var(--paper);}
+.spec-item{ padding: 18px 20px; border-right: var(--line); border-bottom: var(--line);}
+.spec-item:nth-child(4n){ border-right: none;}
+.spec-item:nth-last-child(-n+4){ border-bottom: none;}
+.spec-item__num{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-400); margin-bottom: 6px;}
+.spec-item__name{ font-size: 15px; font-weight: 500; margin-bottom: 4px;}
+.spec-item__doctors{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); text-transform: uppercase; letter-spacing: .04em;}
+
+/* === Articles list === */
+.art-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px;}
+.art{ background: var(--paper); border: var(--line); border-radius: 8px; padding: 22px; display:flex; flex-direction: column;}
+.art__cat{ font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-500); margin-bottom: 16px; display: flex; justify-content: space-between;}
+.art__cat .read{ color: var(--ink-400);}
+.art__title{ font-family: var(--font-serif); font-size: 22px; line-height: 1.2; letter-spacing: -.01em; margin-bottom: 10px;}
+.art__excerpt{ font-size: 13px; color: var(--ink-500); line-height: 1.55; flex: 1; margin-bottom: 16px;}
+.art__foot{ display:flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: var(--line); font-size: 12px; color: var(--ink-500);}
+.art__foot a{ color: var(--ink-900); font-weight: 500; text-decoration: underline; text-underline-offset: 2px;}
+
+/* Misc */
+.row-divider{ height: 1px; background: var(--ink-200); margin: 0;}
+.toolbar{ display:flex; gap: 8px; align-items: center;}
+.search-input{ display:flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 6px; background: var(--paper); border: var(--line); font-size: 13px; color: var(--ink-500); width: 280px;}
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+
+<!-- Inline icons -->
+<script type="text/babel" data-presets="env,react">
+
+const Icon = ({d, size=16, stroke=1.6}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+    {d}
+  </svg>
+);
+const ISearch = (p) => <Icon size={p.size||14} d={<><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></>} />;
+const IBell = () => <Icon d={<><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9z"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></>} />;
+const IPlus = () => <Icon d={<><path d="M12 5v14M5 12h14"/></>} />;
+const IArrow = () => <Icon d={<path d="M5 12h14m-6-6 6 6-6 6"/>} />;
+const IFilter = () => <Icon size={14} d={<path d="M3 6h18M6 12h12M10 18h4"/>} />;
+const IStar = ({filled}) => <svg width="12" height="12" viewBox="0 0 24 24" fill={filled?"#B5751B":"none"} stroke="#B5751B" strokeWidth="1.6" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>;
+const IPin = () => <Icon size={14} d={<><path d="M12 22s-8-7-8-13a8 8 0 0 1 16 0c0 6-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/></>} />;
+const IClock = () => <Icon size={14} d={<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>} />;
+const ICheck = () => <Icon size={12} d={<path d="m5 12 5 5L20 7"/>} />;
+const IDot = () => <Icon size={14} d={<circle cx="12" cy="12" r="3"/>} />;
+
+/* ========================================================== */
+/* Login                                                       */
+/* ========================================================== */
+function Login(){
+  return (
+    <div className="scr">
+      <div className="login-stage">
+        <div className="login-stage__art">
+          <div className="login-stage__art-top">
+            <div className="login-stage__art-top-mark">К</div>
+            <span>Клиника</span>
+          </div>
+          <blockquote className="login-stage__art-quote">
+            «Запись, история приёмов, диагнозы, рецепты — <em>в одной системе.</em>»
+          </blockquote>
+          <div className="login-stage__art-meta">
+            <span>v 4.2.1</span>
+            <span>RU · prod</span>
+            <span><b>2 318</b> приёмов сегодня</span>
+          </div>
+        </div>
+
+        <div className="login-form">
+          <div className="login-form__eyebrow">Hospital IS · вход</div>
+          <h1 className="login-form__title">Войдите в систему</h1>
+          <p className="login-form__sub">Доступ только для сотрудников клиники.</p>
+
+          <div className="field">
+            <label className="field__label">Email</label>
+            <input className="input" placeholder="ivanov@klinika.ru" defaultValue="alexey@klinika.ru" />
+          </div>
+          <div className="field">
+            <label className="field__label">Пароль</label>
+            <input className="input" type="password" placeholder="••••••••" defaultValue="········" />
+          </div>
+
+          <div className="login-form__row">
+            <label><input type="checkbox" defaultChecked /> Запомнить устройство</label>
+            <a href="#">Забыли пароль?</a>
+          </div>
+
+          <button className="btn btn--primary btn--block" style={{height:40}}>Войти</button>
+
+          <div className="login-form__divider">или</div>
+          <div className="login-form__sso">
+            <button className="btn btn--secondary">Войти через ЕСИА</button>
+            <button className="btn btn--secondary">SSO клиники</button>
+          </div>
+
+          <div className="login-form__foot">
+            Нет аккаунта? <a href="#">Запросить доступ</a> · <a href="#">Связаться с админом</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================== */
+/* App chrome                                                  */
+/* ========================================================== */
+function AppChrome({active="dash", children}){
+  return (
+    <div className="scr">
+      <div className="appbar">
+        <div className="appbar__brand">
+          <div className="appbar__brand-mark">К</div>
+          Клиника
+        </div>
+        <nav className="appbar__nav">
+          <a className={active==="dash"?"is-active":""}>Кабинет</a>
+          <a className={active==="appts"?"is-active":""}>Приёмы</a>
+          <a className={active==="patients"?"is-active":""}>Пациенты</a>
+          <a className={active==="doctors"?"is-active":""}>Врачи</a>
+          <a className={active==="services"?"is-active":""}>Услуги</a>
+          <a className={active==="reports"?"is-active":""}>Отчёты</a>
+        </nav>
+        <div className="appbar__spacer"/>
+        <div className="appbar__search">
+          <ISearch/> Поиск пациента, диагноза, врача…
+          <span style={{marginLeft:'auto', fontFamily:'var(--font-mono)', fontSize:11, color:'var(--ink-400)'}}>⌘K</span>
+        </div>
+        <button className="appbar__icon"><IBell/></button>
+        <div className="appbar__avatar">
+          <div className="appbar__avatar-circ">АК</div>
+          А. Карпов
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* ========================================================== */
+/* Patient Dashboard                                           */
+/* ========================================================== */
+function Dashboard(){
+  return (
+    <AppChrome active="dash">
+      <div className="page-pad">
+
+        <div className="page-head">
+          <div>
+            <div className="page-head__eyebrow"><span className="dot"></span>Сегодня · 09 мая 2026 · пятница</div>
+            <h1 className="page-head__title">Добрый день, <em>Алексей</em></h1>
+            <p className="page-head__sub">Терапевт · кабинет 204 · клиника на Ленинградском</p>
+          </div>
+          <div className="page-head__actions">
+            <button className="btn btn--secondary">История</button>
+            <button className="btn btn--secondary">Профиль</button>
+            <button className="btn btn--primary"><IPlus/> Записать пациента</button>
+          </div>
+        </div>
+
+        <div className="kpi-row">
+          <div className="kpi">
+            <div className="kpi__label">Приёмов · месяц</div>
+            <div className="kpi__value">4 <span className="kpi__delta">+12%</span></div>
+            <div className="kpi__sub">vs. апрель 2026</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi__label">Завершено · всего</div>
+            <div className="kpi__value">40</div>
+            <div className="kpi__sub">с 12 января 2026</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi__label">Предстоящих</div>
+            <div className="kpi__value">1</div>
+            <div className="kpi__sub">ближайший — 12.05 в 10:00</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi__label">Рейтинг</div>
+            <div className="kpi__value">4.8 <span className="kpi__delta">25 отз.</span></div>
+            <div className="kpi__sub">за 90 дней</div>
+          </div>
+        </div>
+
+        <div className="dash-grid">
+          <div style={{display:'flex', flexDirection:'column', gap: 16}}>
+            <div className="card">
+              <div className="card__head">
+                <h3>Приёмы сегодня</h3>
+                <span className="meta">09.05.2026 · 0 из 0</span>
+              </div>
+              <div className="list-empty">
+                <div style={{fontSize:13, color:'var(--ink-700)', marginBottom:6}}>На сегодня записей нет.</div>
+                <div style={{fontFamily:'var(--font-mono)', fontSize:11, color:'var(--ink-500)'}}>Следующий приём — понедельник, 12.05 в 10:00</div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card__head">
+                <h3>Последние приёмы</h3>
+                <a className="meta" style={{color:'var(--ink-900)', textDecoration:'underline', textUnderlineOffset:3}}>Все 40 →</a>
+              </div>
+              <div className="appt-row">
+                <div className="appt-time">11:00<small>09.05</small></div>
+                <div className="appt-info">
+                  <div className="appt-info__name">Карпова Светлана Николаевна</div>
+                  <div className="appt-info__meta">36 лет · впервые</div>
+                </div>
+                <span className="badge badge--ok"><span className="d"></span>Завершён</span>
+                <button className="btn btn--secondary btn--sm">Открыть</button>
+              </div>
+              <div className="appt-row">
+                <div className="appt-time">13:00<small>04.05</small></div>
+                <div className="appt-info">
+                  <div className="appt-info__name">Крылова Анна Петровна</div>
+                  <div className="appt-info__meta">Диагноз · <span style={{fontFamily:'var(--font-mono)'}}>J18.9</span> Пневмония неуточнённая</div>
+                </div>
+                <span className="badge badge--ok"><span className="d"></span>Завершён</span>
+                <button className="btn btn--secondary btn--sm">Открыть</button>
+              </div>
+              <div className="appt-row">
+                <div className="appt-time">12:00<small>04.05</small></div>
+                <div className="appt-info">
+                  <div className="appt-info__name">Жуков Александр Фёдорович</div>
+                  <div className="appt-info__meta">Диагноз · <span style={{fontFamily:'var(--font-mono)'}}>E11.9</span> Сахарный диабет 2-го типа</div>
+                </div>
+                <span className="badge badge--ok"><span className="d"></span>Завершён</span>
+                <button className="btn btn--secondary btn--sm">Открыть</button>
+              </div>
+              <div className="appt-row">
+                <div className="appt-time">10:30<small>02.05</small></div>
+                <div className="appt-info">
+                  <div className="appt-info__name">Воробьёва Ирина Геннадьевна</div>
+                  <div className="appt-info__meta">Повторный приём · направление от кардиолога</div>
+                </div>
+                <span className="badge badge--ok"><span className="d"></span>Завершён</span>
+                <button className="btn btn--secondary btn--sm">Открыть</button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{display:'flex', flexDirection:'column', gap: 16}}>
+            <div className="card">
+              <div className="card__head">
+                <h3>Уведомления</h3>
+                <span className="meta">3 новых</span>
+              </div>
+              <div className="activity">
+                <div className="activity__item">
+                  <div className="activity__dot activity__dot--info"></div>
+                  <div>
+                    <div className="activity__title">Расписание <b>понедельник 12.05</b> ожидает подтверждения от администратора.</div>
+                  </div>
+                  <div className="activity__time">2ч</div>
+                </div>
+                <div className="activity__item">
+                  <div className="activity__dot activity__dot--warn"></div>
+                  <div>
+                    <div className="activity__title">Пациент <b>Крылова А. П.</b> запросила копию выписки от 04.05.</div>
+                  </div>
+                  <div className="activity__time">5ч</div>
+                </div>
+                <div className="activity__item">
+                  <div className="activity__dot activity__dot--ok"></div>
+                  <div>
+                    <div className="activity__title">Лаборатория прислала результаты по <b>Жукову А. Ф.</b></div>
+                  </div>
+                  <div className="activity__time">вчера</div>
+                </div>
+                <div className="activity__item">
+                  <div className="activity__dot"></div>
+                  <div>
+                    <div className="activity__title">Новый отзыв · 5 звёзд · «Очень внимательный доктор».</div>
+                  </div>
+                  <div className="activity__time">2 дн</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card__head">
+                <h3>Мой график</h3>
+                <span className="meta">эта неделя</span>
+              </div>
+              <div className="card__body" style={{padding:14}}>
+                <div className="schedule">
+                  <div className="schedule__day"><div className="schedule__day-name">Пн</div><div className="schedule__day-time">9–17</div></div>
+                  <div className="schedule__day"><div className="schedule__day-name">Вт</div><div className="schedule__day-time">9–17</div></div>
+                  <div className="schedule__day"><div className="schedule__day-name">Ср</div><div className="schedule__day-time">9–13</div></div>
+                  <div className="schedule__day"><div className="schedule__day-name">Чт</div><div className="schedule__day-time">9–17</div></div>
+                  <div className="schedule__day"><div className="schedule__day-name">Пт</div><div className="schedule__day-time">9–17</div></div>
+                  <div className="schedule__day off"><div className="schedule__day-name">Сб</div><div className="schedule__day-time">—</div></div>
+                  <div className="schedule__day off"><div className="schedule__day-name">Вс</div><div className="schedule__day-time">—</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </AppChrome>
+  );
+}
+
+/* ========================================================== */
+/* Doctors list                                                */
+/* ========================================================== */
+function DoctorsList(){
+  const docs = [
+    { i:"АТ", name:"Антонов Тимур Денисович", spec:"Терапевт", exp:"14 лет", rating:4.9, count:42, next:"Сегодня · 14:30", price:"от 2 500 ₽" },
+    { i:"БК", name:"Белова Ксения Алексеевна", spec:"Кардиолог", exp:"9 лет", rating:4.8, count:31, next:"Завтра · 09:00", price:"от 3 000 ₽" },
+    { i:"БЕ", name:"Беляев Евгений Сергеевич", spec:"Невролог", exp:"21 год", rating:4.7, count:67, next:"12.05 · 10:00", price:"от 3 200 ₽" },
+    { i:"ВЛ", name:"Власова Людмила Игоревна", spec:"Эндокринолог", exp:"11 лет", rating:5.0, count:19, next:"13.05 · 11:30", price:"от 2 800 ₽" },
+    { i:"ГА", name:"Гаврилов Артём Павлович", spec:"Хирург", exp:"18 лет", rating:4.8, count:54, next:"Сегодня · 16:00", price:"от 3 500 ₽" },
+    { i:"ДН", name:"Дроздова Наталья Юрьевна", spec:"Гастроэнтеролог", exp:"7 лет", rating:4.6, count:23, next:"15.05 · 12:00", price:"от 2 700 ₽" },
+  ];
+  return (
+    <AppChrome active="doctors">
+      <div className="page-pad">
+        <div className="page-head">
+          <div>
+            <div className="page-head__eyebrow"><span className="dot"></span>32 специалиста · 14 направлений</div>
+            <h1 className="page-head__title">Врачи клиники</h1>
+            <p className="page-head__sub">Найдите специалиста по направлению, опыту, ближайшему свободному времени.</p>
+          </div>
+          <div className="page-head__actions">
+            <div className="search-input"><ISearch/> Имя, специальность…</div>
+            <button className="btn btn--secondary"><IFilter/> Фильтры</button>
+            <button className="btn btn--primary"><IPlus/> Добавить врача</button>
+          </div>
+        </div>
+
+        <div className="filters">
+          <span className="chip is-active">Все <span className="count">32</span></span>
+          <span className="chip">Терапевты <span className="count">6</span></span>
+          <span className="chip">Кардиологи <span className="count">4</span></span>
+          <span className="chip">Неврологи <span className="count">3</span></span>
+          <span className="chip">Хирурги <span className="count">5</span></span>
+          <span className="chip">Эндокринологи <span className="count">2</span></span>
+          <span className="chip">Гастроэнтерологи <span className="count">2</span></span>
+          <span className="chip">Дерматологи <span className="count">3</span></span>
+          <span className="chip">+ ещё 5</span>
+        </div>
+
+        <div className="doc-list">
+          {docs.map((d,idx) => (
+            <div className="doc-row" key={idx}>
+              <div className="doc-row__avatar">{d.i}</div>
+              <div>
+                <div className="doc-row__name">{d.name}</div>
+                <div className="doc-row__spec">{d.spec} · опыт {d.exp}</div>
+              </div>
+              <div>
+                <div className="doc-row__cell-label">Рейтинг</div>
+                <div className="doc-row__rating">
+                  <IStar filled/> {d.rating} <span className="count">· {d.count} отз.</span>
+                </div>
+              </div>
+              <div>
+                <div className="doc-row__cell-label">Ближайший слот</div>
+                <div className="doc-row__cell-val">{d.next}</div>
+              </div>
+              <div>
+                <div className="doc-row__cell-label">Стоимость</div>
+                <div className="doc-row__cell-val">{d.price}</div>
+              </div>
+              <div style={{display:'flex', gap:6}}>
+                <button className="btn btn--secondary btn--sm">Профиль</button>
+                <button className="btn btn--primary btn--sm">Записать</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </AppChrome>
+  );
+}
+
+/* ========================================================== */
+/* Doctor detail                                               */
+/* ========================================================== */
+function DoctorDetail(){
+  return (
+    <AppChrome active="doctors">
+      <div className="page-pad">
+        <div style={{fontFamily:'var(--font-mono)', fontSize:11, color:'var(--ink-500)', marginBottom:16, display:'flex', gap:8}}>
+          <a style={{color:'var(--ink-500)'}}>Врачи</a> <span>/</span> <a style={{color:'var(--ink-500)'}}>Кардиологи</a> <span>/</span> <span style={{color:'var(--ink-900)'}}>Белова К. А.</span>
+        </div>
+
+        <div className="det-head">
+          <div className="det-head__avatar">БК</div>
+          <div>
+            <h1 className="det-head__name">Белова Ксения Алексеевна</h1>
+            <div className="det-head__spec">Кардиолог · к. м. н. · ведущий специалист отделения</div>
+            <div className="det-head__meta">
+              <div><span>Опыт</span><b>9 лет</b></div>
+              <div><span>Рейтинг</span><b>4.8 · 31 отзыв</b></div>
+              <div><span>Кабинет</span><b>307</b></div>
+              <div><span>Образование</span><b>РНИМУ им. Пирогова, 2014</b></div>
+              <div><span>Ставка</span><b>от 3 000 ₽</b></div>
+            </div>
+          </div>
+          <div style={{display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end'}}>
+            <span className="badge badge--ok"><span className="d"></span>Принимает</span>
+            <button className="btn btn--secondary btn--sm">Сообщение</button>
+            <button className="btn btn--primary">Записать на приём</button>
+          </div>
+        </div>
+
+        <div className="tabs">
+          <button className="is-active">Обзор</button>
+          <button>Расписание</button>
+          <button>Услуги и цены</button>
+          <button>Отзывы · 31</button>
+          <button>Сертификаты</button>
+        </div>
+
+        <div className="det-body" style={{marginTop:20}}>
+          <div style={{display:'flex', flexDirection:'column', gap:16}}>
+            <div className="card">
+              <div className="card__head"><h3>О специалисте</h3></div>
+              <div className="card__body" style={{fontSize:14, color:'var(--ink-700)', lineHeight:1.7}}>
+                Ведёт пациентов с артериальной гипертензией, ИБС, нарушениями ритма и хронической сердечной недостаточностью. Проводит ЭКГ, холтеровское мониторирование, нагрузочные пробы. Соавтор клинических рекомендаций по реабилитации после ОИМ (2023).
+                <div style={{display:'flex', gap:6, marginTop:14, flexWrap:'wrap'}}>
+                  <span className="badge badge--neutral">Гипертония</span>
+                  <span className="badge badge--neutral">ИБС</span>
+                  <span className="badge badge--neutral">Аритмия</span>
+                  <span className="badge badge--neutral">ХСН</span>
+                  <span className="badge badge--neutral">Холтер</span>
+                  <span className="badge badge--neutral">Реабилитация</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card__head"><h3>Отзывы</h3><span className="meta">показано 3 из 31</span></div>
+              <div className="review">
+                <div className="review__head">
+                  <div className="avatar">МК</div>
+                  <div>
+                    <div className="review__author">Мария К.</div>
+                    <div className="stars"><IStar filled/><IStar filled/><IStar filled/><IStar filled/><IStar filled/></div>
+                  </div>
+                  <div className="review__date">28.04.2026</div>
+                </div>
+                <div className="review__text">Очень внимательный врач, подробно разобрала ЭКГ, объяснила все нюансы. Назначения адекватные, без избыточных обследований.</div>
+              </div>
+              <div className="review">
+                <div className="review__head">
+                  <div className="avatar">ИП</div>
+                  <div>
+                    <div className="review__author">Игорь П.</div>
+                    <div className="stars"><IStar filled/><IStar filled/><IStar filled/><IStar filled/><IStar/></div>
+                  </div>
+                  <div className="review__date">19.04.2026</div>
+                </div>
+                <div className="review__text">Грамотный кардиолог. Единственное — пришлось подождать 15 минут сверх записи, но это мелочи.</div>
+              </div>
+              <div className="review">
+                <div className="review__head">
+                  <div className="avatar">СВ</div>
+                  <div>
+                    <div className="review__author">Светлана В.</div>
+                    <div className="stars"><IStar filled/><IStar filled/><IStar filled/><IStar filled/><IStar filled/></div>
+                  </div>
+                  <div className="review__date">11.04.2026</div>
+                </div>
+                <div className="review__text">Прекрасный специалист, нашла причину одышки, которую двое других врачей не увидели. Очень рекомендую.</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{display:'flex', flexDirection:'column', gap:16}}>
+            <div className="card">
+              <div className="card__head"><h3>Расписание</h3><span className="meta">эта неделя</span></div>
+              <div className="card__body" style={{padding:14}}>
+                <div className="schedule">
+                  <div className="schedule__day"><div className="schedule__day-name">Пн</div><div className="schedule__day-time">9–14</div></div>
+                  <div className="schedule__day"><div className="schedule__day-name">Вт</div><div className="schedule__day-time">14–20</div></div>
+                  <div className="schedule__day off"><div className="schedule__day-name">Ср</div><div className="schedule__day-time">—</div></div>
+                  <div className="schedule__day"><div className="schedule__day-name">Чт</div><div className="schedule__day-time">9–14</div></div>
+                  <div className="schedule__day"><div className="schedule__day-name">Пт</div><div className="schedule__day-time">14–20</div></div>
+                  <div className="schedule__day"><div className="schedule__day-name">Сб</div><div className="schedule__day-time">10–14</div></div>
+                  <div className="schedule__day off"><div className="schedule__day-name">Вс</div><div className="schedule__day-time">—</div></div>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card__head"><h3>Свободные слоты</h3><span className="meta">завтра, 10.05</span></div>
+              <div className="card__body" style={{padding:14, display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:6}}>
+                {["09:00","09:30","10:00","10:30","11:00","11:30"].map(t=>(
+                  <button key={t} className="btn btn--secondary btn--sm" style={{justifyContent:'center'}}>{t}</button>
+                ))}
+              </div>
+              <div className="card__foot">
+                <span>6 свободных из 12 слотов</span>
+                <a style={{color:'var(--ink-900)', fontWeight:500, textDecoration:'underline', textUnderlineOffset:3}}>Все даты →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </AppChrome>
+  );
+}
+
+/* ========================================================== */
+/* Public homepage                                             */
+/* ========================================================== */
+function PublicHome(){
+  const specs = [
+    {n:"01", name:"Терапия", count:6}, {n:"02", name:"Кардиология", count:4},
+    {n:"03", name:"Неврология", count:3}, {n:"04", name:"Эндокринология", count:2},
+    {n:"05", name:"Гастроэнтерология", count:2}, {n:"06", name:"Хирургия", count:5},
+    {n:"07", name:"Дерматология", count:3}, {n:"08", name:"Гинекология", count:4},
+    {n:"09", name:"Офтальмология", count:2}, {n:"10", name:"ЛОР", count:1},
+    {n:"11", name:"Стоматология", count:0}, {n:"12", name:"Все направления →", count:null},
+  ];
+  return (
+    <div className="scr">
+      <div className="tophead">
+        <a className="tophead__brand"><div className="tophead__brand-mark">К</div>Клиника</a>
+        <nav className="tophead__nav">
+          <a className="is-active">Главная</a>
+          <a>О клинике</a>
+          <a>Врачи</a>
+          <a>Услуги и цены</a>
+          <a>Статьи</a>
+          <a>Контакты</a>
+          <a>FAQ</a>
+        </nav>
+        <div className="tophead__spacer"/>
+        <button className="btn btn--ghost btn--sm">+7 (495) 234-78-12</button>
+        <button className="btn btn--secondary btn--sm">Войти</button>
+        <button className="btn btn--primary btn--sm">Записаться</button>
+      </div>
+
+      <div className="public-hero">
+        <div>
+          <div className="eyebrow" style={{marginBottom:14}}><span style={{display:'inline-block', width:6, height:6, background:'var(--ok-600)', borderRadius:'50%', marginRight:8, verticalAlign:'middle'}}></span>Принимаем · 9 врачей сейчас</div>
+          <h1 className="public-hero__title">Здоровье — это <em>системная работа,</em><br/>а не разовый визит.</h1>
+          <p className="public-hero__lead">Многопрофильная клиника на Ленинградском проспекте: 32 специалиста, собственная лаборатория, прозрачные цены, запись онлайн без звонка.</p>
+          <div className="public-hero__cta">
+            <button className="btn btn--primary btn--lg">Записаться на приём <IArrow/></button>
+            <button className="btn btn--secondary btn--lg">Все врачи</button>
+          </div>
+        </div>
+        <div className="public-hero__panel">
+          <h4>Запись онлайн</h4>
+          <div className="public-hero__quick">
+            <div>
+              <label>Направление</label>
+              <select defaultValue=""><option value="">Выберите специалиста…</option><option>Терапия</option><option>Кардиология</option><option>Неврология</option></select>
+            </div>
+            <div>
+              <label>Дата</label>
+              <input type="date" defaultValue="2026-05-12"/>
+            </div>
+            <div>
+              <label>Время</label>
+              <select><option>Любое</option><option>Утро (9–12)</option><option>День (12–16)</option><option>Вечер (16–20)</option></select>
+            </div>
+            <button className="btn btn--primary btn--block" style={{marginTop:8}}>Найти слот</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="public-meta-row">
+        <div className="public-meta">
+          <div className="public-meta__label">Специалистов</div>
+          <div className="public-meta__value">32</div>
+        </div>
+        <div className="public-meta">
+          <div className="public-meta__label">Направлений</div>
+          <div className="public-meta__value">14</div>
+        </div>
+        <div className="public-meta">
+          <div className="public-meta__label">Пациентов · 2025</div>
+          <div className="public-meta__value">8 412</div>
+        </div>
+        <div className="public-meta">
+          <div className="public-meta__label">Средний рейтинг</div>
+          <div className="public-meta__value">4.8 <span style={{fontFamily:'var(--font-mono)', fontSize:13, color:'var(--ink-500)'}}>· 1 240 отз.</span></div>
+        </div>
+      </div>
+
+      <section className="public-section">
+        <div className="public-section__head">
+          <h2 className="public-section__title">Направления, <em>в которых мы работаем</em></h2>
+          <a className="public-section__more">Все направления →</a>
+        </div>
+        <div className="spec-list">
+          {specs.map(s=>(
+            <div className="spec-item" key={s.n}>
+              <div className="spec-item__num">{s.n}</div>
+              <div className="spec-item__name">{s.name}</div>
+              <div className="spec-item__doctors">{s.count===null?"":(s.count===0?"скоро":`${s.count} ${s.count===1?"врач":(s.count<5?"врача":"врачей")}`)}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ========================================================== */
+/* Articles list                                               */
+/* ========================================================== */
+function Articles(){
+  const arts = [
+    {cat:"Подготовка к обследованию", title:"Как подготовиться к УЗИ", excerpt:"Простые правила подготовки к ультразвуковому исследованию органов брюшной полости, щитовидной железы, малого таза и других зон.", read:"4 мин", date:"08.05.2026", n:"01"},
+    {cat:"Нормы и показатели", title:"Норма артериального давления по возрасту", excerpt:"Какое давление считается нормальным в 20, 40 и 60 лет. Таблица значений и когда стоит обратиться к врачу.", read:"5 мин", date:"05.05.2026", n:"02"},
+    {cat:"Когда к врачу", title:"Когда нужно обратиться к кардиологу", excerpt:"Симптомы, которые требуют консультации кардиолога. Не откладывайте визит при появлении одышки, болей или нарушений ритма.", read:"4 мин", date:"02.05.2026", n:"03"},
+    {cat:"Подготовка к обследованию", title:"Как подготовиться к анализу крови", excerpt:"Правила подготовки к общему, биохимическому анализу крови и коагулограмме. За сколько часов прекращать приём пищи.", read:"3 мин", date:"28.04.2026", n:"04"},
+    {cat:"Первая помощь", title:"Признаки инсульта: FAST — действуй быстро", excerpt:"Как распознать инсульт у себя или окружающих и что делать в первые минуты до приезда скорой помощи.", read:"3 мин", date:"24.04.2026", n:"05"},
+    {cat:"Когда к врачу", title:"Боль в спине: к неврологу или ортопеду?", excerpt:"Разбираемся, к какому специалисту записаться при болях в спине и какие симптомы должны насторожить.", read:"4 мин", date:"19.04.2026", n:"06"},
+  ];
+  return (
+    <div className="scr">
+      <div className="tophead">
+        <a className="tophead__brand"><div className="tophead__brand-mark">К</div>Клиника</a>
+        <nav className="tophead__nav">
+          <a>Главная</a><a>О клинике</a><a>Врачи</a><a>Услуги и цены</a>
+          <a className="is-active">Статьи</a><a>Контакты</a><a>FAQ</a>
+        </nav>
+        <div className="tophead__spacer"/>
+        <button className="btn btn--secondary btn--sm">Войти</button>
+        <button className="btn btn--primary btn--sm">Записаться</button>
+      </div>
+
+      <div className="page-pad" style={{padding:'48px 48px'}}>
+        <div className="page-head">
+          <div>
+            <div className="page-head__eyebrow"><span className="dot"></span>12 материалов · обновлено 08.05.2026</div>
+            <h1 className="page-head__title" style={{fontSize:48}}>Статьи о <em>здоровье</em></h1>
+            <p className="page-head__sub">Понятные тексты от практикующих врачей клиники. Без сенсаций, со ссылками на клинические рекомендации.</p>
+          </div>
+          <div className="page-head__actions">
+            <div className="search-input"><ISearch/> Поиск по статьям…</div>
+          </div>
+        </div>
+
+        <div className="filters">
+          <span className="chip is-active">Все <span className="count">12</span></span>
+          <span className="chip">Когда к врачу <span className="count">3</span></span>
+          <span className="chip">Нормы и показатели <span className="count">2</span></span>
+          <span className="chip">Первая помощь <span className="count">2</span></span>
+          <span className="chip">Подготовка к обследованию <span className="count">3</span></span>
+          <span className="chip">Профилактика <span className="count">2</span></span>
+        </div>
+
+        <div className="art-grid">
+          {arts.map(a=>(
+            <article className="art" key={a.n}>
+              <div className="art__cat"><span>{a.n} · {a.cat}</span><span className="read">{a.read}</span></div>
+              <h3 className="art__title">{a.title}</h3>
+              <p className="art__excerpt">{a.excerpt}</p>
+              <div className="art__foot">
+                <span>{a.date}</span>
+                <a>Читать →</a>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================== */
+/* Canvas                                                      */
+/* ========================================================== */
+function App(){
+  return (
+    <DesignCanvas title="Клиника · Redesigned screens" subtitle="ink-only mono · approved direction · v1">
+      <DCSection id="auth" title="01 — Auth & login">
+        <DCArtboard id="login" label="Login · split-screen" width={1280} height={800}>
+          <Login/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="product" title="02 — In-product (logged-in)">
+        <DCArtboard id="dashboard" label="Patient dashboard · «Личный кабинет»" width={1440} height={1000}>
+          <Dashboard/>
+        </DCArtboard>
+        <DCArtboard id="doctors" label="Doctors list · staff index" width={1440} height={920}>
+          <DoctorsList/>
+        </DCArtboard>
+        <DCArtboard id="doctor-detail" label="Doctor detail · profile + booking" width={1440} height={1100}>
+          <DoctorDetail/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="public" title="03 — Public site">
+        <DCArtboard id="home" label="Public homepage · marketing" width={1440} height={960}>
+          <PublicHome/>
+        </DCArtboard>
+        <DCArtboard id="articles" label="Articles list" width={1440} height={1080}>
+          <Articles/>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

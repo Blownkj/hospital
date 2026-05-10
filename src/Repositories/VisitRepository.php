@@ -99,7 +99,7 @@ class VisitRepository extends BaseRepository
             "SELECT v.id AS visit_id, v.started_at, v.ended_at,
                     v.complaints, v.examination, v.diagnosis,
                     a.scheduled_at,
-                    d.full_name AS doctor_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name,
                     s.name AS specialization
              FROM visits v
              JOIN appointments a ON a.id = v.appointment_id
@@ -142,10 +142,10 @@ class VisitRepository extends BaseRepository
             "SELECT v.id, v.complaints, v.examination, v.diagnosis,
                     v.started_at, v.ended_at,
                     a.scheduled_at,
-                    d.full_name AS doctor_name,
+                    CONCAT_WS(' ', d.last_name, d.first_name, d.middle_name) AS doctor_name,
                     d.photo_url AS doctor_photo,
                     s.name AS specialization,
-                    p.full_name AS patient_name,
+                    CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) AS patient_name,
                     p.birth_date AS patient_birth_date,
                     p.phone AS patient_phone
              FROM visits v
