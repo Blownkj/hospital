@@ -667,7 +667,7 @@ select.form__control {
 }
 .public-hero__cta { display: flex; gap: var(--space-3); flex-wrap: wrap; }
 .public-hero__panel {
-  align-self: end; background: var(--color-surface-2); border: 1px solid var(--color-border);
+  align-self: center; background: var(--color-surface-2); border: 1px solid var(--color-border);
   border-radius: var(--radius-md); padding: var(--space-5);
 }
 .public-hero__panel h4 {
